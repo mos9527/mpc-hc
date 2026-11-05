@@ -1208,22 +1208,6 @@ msgid "Save As..."
 msgstr "Запиши като..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Проверка за актуализация"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Включи автоматична проверка за актуализации"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Провери всеки:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "ден(дни)"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr "Настройки за цвят"
 
@@ -1575,22 +1559,6 @@ msgid ""
 msgstr ""
 "Автоматично запазване на свалените субтитри в първата папка за автоматично "
 "зареждане"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Проверка за актуализация"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "&Изтегли сега"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Напомни ми &по-късно"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Игнорирай актуализацията"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

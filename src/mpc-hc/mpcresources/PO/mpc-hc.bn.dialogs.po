@@ -1208,22 +1208,6 @@ msgid "Save As..."
 msgstr "সেইভ করতে পারি..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "হালনাগাদ অনুসন্ধান"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "স্বয়ংক্রিয়ভাবে হালনাগাদ অনুসন্ধান সক্রিয়করণ"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "অনুসন্ধান করা হবে:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "দিন পরপর"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr ""
 
@@ -1573,22 +1557,6 @@ msgctxt "IDD_PPAGESUBMISC_IDC_CHECK_AUTOSAVE_ONLINE_SUBTITLE"
 msgid ""
 "Automatically save downloaded subtitles to the first autoload path folder"
 msgstr ""
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "হালনাগাদ অনুসন্ধানকরণ"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "এখনই ডাউনলোড করি(&D)"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "পরে মনে করিয়ে দেওয়া হোক(&L)"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "এই হালনাগাদটি উপেক্ষা করি(&I)"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

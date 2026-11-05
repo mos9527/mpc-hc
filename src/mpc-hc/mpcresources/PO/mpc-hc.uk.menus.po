@@ -158,6 +158,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr ""
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "&Плаваюча"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "Показувати &обкладинку"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "На весь екран"
@@ -793,10 +801,6 @@ msgstr "&Допомога"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "&Домашня сторінка"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "Перевірити &оновлення"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

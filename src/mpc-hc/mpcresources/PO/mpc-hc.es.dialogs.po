@@ -1223,22 +1223,6 @@ msgid "Save As..."
 msgstr "Guardar como…"
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Búsqueda de actualizaciones"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Activar búsqueda automática de actualizaciones"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Comprobar cada:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "días"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr "Controles de color"
 
@@ -1587,22 +1571,6 @@ msgid ""
 msgstr ""
 "Guardar automáticamente los subtítulos a la primera ruta de \"Rutas de "
 "autocarga\""
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Búsqueda de actualizaciones"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "&Descargar ahora"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Recordarme &luego"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Ignorar esta actualización"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

@@ -1189,22 +1189,6 @@ msgid "Save As..."
 msgstr ""
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "ਅੱਪਡੇਟ ਜਾਂਚ ਕਰੋ"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "ਆਟੋਮੈਟਿਕ ਅੱਪਡੇਟ ਜਾਂਚ ਸਮਰੱਥ ਕਰੋ"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "ਜਾਂਚ ਕਰੋ ਹਰੇਕ:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "ਦਿਨ"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr ""
 
@@ -1549,22 +1533,6 @@ msgctxt "IDD_PPAGESUBMISC_IDC_CHECK_AUTOSAVE_ONLINE_SUBTITLE"
 msgid ""
 "Automatically save downloaded subtitles to the first autoload path folder"
 msgstr ""
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "ਅੱਪਡੇਟ ਚੈਕਰ"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "ਹੁਣੇ ਡਾਊਨਲੋਡ ਕਰੋ(&D)"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "ਮੈਨੂੰ ਬਾਅਦ ਵਿੱਚ ਯਾਦ ਕਰਵਾਉ(&l)"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "ਇਹ ਅੱਪਡੇਟ ਅਣਡਿੱਠਾ ਕਰੋ(I)"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

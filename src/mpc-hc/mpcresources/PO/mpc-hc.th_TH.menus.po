@@ -157,6 +157,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr ""
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "&ลอย"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "แสดง&ภาพปก"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "เ&ต็มจอ"
@@ -792,10 +800,6 @@ msgstr "&ช่วยเหลือ"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "&หน้าหลักเว็บ"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "&ตรวจสอบการอัพเดต"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

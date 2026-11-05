@@ -1208,22 +1208,6 @@ msgid "Save As..."
 msgstr "Uložiť ako..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Kontrola aktualizácií"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Zapnúť automatickú kontrolu aktualizácií"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Frekvencia kontroly:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "dní"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr "Ovládacie prvky farieb"
 
@@ -1570,22 +1554,6 @@ msgid ""
 msgstr ""
 "Automaticky uložiť stiahnuté titulky do prvého priečinka s cestou pre "
 "automatické načítanie"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Kontrola aktualizácií"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "&Stiahnuť teraz"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Pripomenúť &neskôr"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Ignorovať túto aktualizáciu"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

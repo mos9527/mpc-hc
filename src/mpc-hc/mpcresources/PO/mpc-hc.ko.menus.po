@@ -159,6 +159,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr "사용자 지정(&U)"
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "플로팅(&F)"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "커버 아트 표시(&H)"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "전체 화면(&U)"
@@ -794,10 +802,6 @@ msgstr "도움말(&H)"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "홈페이지(&H)"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "업데이트 확인(&U)"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

@@ -162,6 +162,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr "&Personalización"
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "&Flotante"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "&Mostrar carátula"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "&Pantalla completa"
@@ -797,10 +805,6 @@ msgstr "Ay&uda"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "&Sitio web"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "&Buscar actualizaciones"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

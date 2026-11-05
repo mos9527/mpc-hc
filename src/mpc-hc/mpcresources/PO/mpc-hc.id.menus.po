@@ -159,6 +159,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr ""
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "Men&gambang"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "Tampi&lkan Kover Album"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "Layar Pen&uh"
@@ -794,10 +802,6 @@ msgstr "B&antuan"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "Halaman &Beranda"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "Periksa Pe&mutakhiran"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

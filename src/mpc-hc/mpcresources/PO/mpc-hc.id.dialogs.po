@@ -1210,22 +1210,6 @@ msgid "Save As..."
 msgstr "Simpan Sebagai..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Periksa pemutakhiran"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Fungsikan pemeriksaan pemutakhiran otomatis"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Periksa setiap:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "hari"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr ""
 
@@ -1575,22 +1559,6 @@ msgid ""
 "Automatically save downloaded subtitles to the first autoload path folder"
 msgstr ""
 "Otomatis menyimpan subtitle yang diunduh ke folder jalur autoload pertama"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Pemeriksa Pemutakhiran"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "Un&duh sekarang"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Ingatkan saya &lagi"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "Aba&ikan pemutakhiran ini"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

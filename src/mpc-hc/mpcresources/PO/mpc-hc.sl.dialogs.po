@@ -1206,22 +1206,6 @@ msgid "Save As..."
 msgstr "Shrani kot..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Preveri za posodobitve"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Omogoči samodejno preverjanje za posodobitve"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Preveri vsake:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "Dni"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr ""
 
@@ -1567,22 +1551,6 @@ msgid ""
 "Automatically save downloaded subtitles to the first autoload path folder"
 msgstr ""
 "Samodejno shrani prenesene podnapise v prvo mapo poti za samodejno nalaganje"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Preverjanje posodobitev"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "Pre&nesi sedaj"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Spomni me &kasneje"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Prezri to posodobitev"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

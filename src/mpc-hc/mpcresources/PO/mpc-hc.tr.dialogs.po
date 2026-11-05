@@ -1216,22 +1216,6 @@ msgid "Save As..."
 msgstr "Farklı kaydet..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Güncelleştirme kontrolü"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Otomatik güncelleme kontrolünü etkinleştir"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Kontrol süresi:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "günde bir"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr "Renk ayarları"
 
@@ -1581,22 +1565,6 @@ msgid ""
 msgstr ""
 "İndirilen altyazıları \"Yükletme yerleri\"ndeki ilk yolda bulunan klasöre "
 "kaydet"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Güncelleme denetleyici"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "Şim&di indir"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Daha sonra &hatırlat"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "Bu güncellemeyi &yok say"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

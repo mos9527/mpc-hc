@@ -1218,22 +1218,6 @@ msgid "Save As..."
 msgstr "Mentés másként..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Frissítések keresése"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Frissítések keresése automatikusan"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Ellenőrzés:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "naponta"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr "Színbeállítások"
 
@@ -1583,22 +1567,6 @@ msgid ""
 msgstr ""
 "Letöltött feliratok automatikus mentése az első automatikus betöltési "
 "útvonal mappába"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Frissítés kereső"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "Letöltés most"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Emlékeztess később"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "Frissítés figyelmen kívül hagyása"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

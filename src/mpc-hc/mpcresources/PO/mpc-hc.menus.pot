@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: MPC-HC\n"
-"POT-Creation-Date: 2026-08-22 12:16:02+0000\n"
+"POT-Creation-Date: 2026-11-05 11:25:59+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -151,6 +151,14 @@ msgstr ""
 
 msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
+msgstr ""
+
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr ""
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
 msgstr ""
 
 msgctxt "ID_VIEW_FULLSCREEN"
@@ -787,10 +795,6 @@ msgstr ""
 
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
-msgstr ""
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
 msgstr ""
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"

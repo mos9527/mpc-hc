@@ -1214,22 +1214,6 @@ msgid "Save As..."
 msgstr "Αποθήκευση ως..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Έλεγχος για ενημερώσεις"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Ενεργοποίηση αυτόματου ελέγχου ενημερώσεων"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Έλεγχος κάθε:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "ημέρα(ες)"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr ""
 
@@ -1580,22 +1564,6 @@ msgid ""
 msgstr ""
 "Αποθηκεύστε αυτόματα τους ληφθέντες υπότιτλους στον πρώτο φάκελο διαδρομής "
 "αυτόματης φόρτωσης"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Έλεγχος για ενημερώσεις"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "&Λήψη τώρα"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "&Υπενθύμιση αργότερα"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Παράβλεψη ενημέρωσης"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

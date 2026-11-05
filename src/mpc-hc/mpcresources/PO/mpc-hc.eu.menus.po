@@ -158,6 +158,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr ""
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "&Flotagarri"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "Erakutsi bi&lduma-azala"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "Ikusleiho &Osoan"
@@ -793,10 +801,6 @@ msgstr "&Laguntza"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "Etxeko &Orrialdea"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "Egiaztatu &Eguneraketak"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

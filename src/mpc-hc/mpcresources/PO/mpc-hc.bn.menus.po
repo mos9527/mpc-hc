@@ -157,6 +157,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr ""
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "ভাসমান (&F)"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "কভার আর্ট দেখান (&H)"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "ফুলস্ক্রীন (&U)"
@@ -792,10 +800,6 @@ msgstr "সহায়িকা (&H)"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "হোম পেইজ (&H)"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "হালনাগাদ অনুসন্ধান করি (&U)"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

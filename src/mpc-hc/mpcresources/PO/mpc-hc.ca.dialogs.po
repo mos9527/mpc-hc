@@ -1220,22 +1220,6 @@ msgid "Save As..."
 msgstr "Anomena i desa…"
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Comprovació d'actualitzacions"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Activa la comprovació automàtica d'actualitzacions"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Comprova cada:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "dies"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr ""
 
@@ -1587,22 +1571,6 @@ msgid ""
 msgstr ""
 "Desa automàticament els subtítols baixats a la primera ruta de carpeta "
 "autocarregada."
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Comprovador d'actualitzacions"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "&Baixa-la ara"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Recorda-m'ho &més tard"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Ignora aquesta actualització"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

@@ -162,6 +162,14 @@ msgctxt "ID_VIEW_PRESETS_CUSTOM"
 msgid "C&ustom"
 msgstr "自定义"
 
+msgctxt "ID_VIEW_PRESETS_FLOATING"
+msgid "&Floating"
+msgstr "悬浮(&F)"
+
+msgctxt "ID_VIEW_COVERART"
+msgid "S&how Cover Art"
+msgstr "显示专辑封面(&H)"
+
 msgctxt "ID_VIEW_FULLSCREEN"
 msgid "F&ull Screen"
 msgstr "全屏幕(&U)"
@@ -797,10 +805,6 @@ msgstr "帮助(&H)"
 msgctxt "ID_HELP_HOMEPAGE"
 msgid "&Home Page"
 msgstr "网站主页(&H)"
-
-msgctxt "ID_HELP_CHECKFORUPDATE"
-msgid "Check for &updates"
-msgstr "检查更新(&U)"
 
 msgctxt "ID_HELP_SHOWCOMMANDLINESWITCHES"
 msgid "&Command Line Switches"

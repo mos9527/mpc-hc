@@ -1209,22 +1209,6 @@ msgid "Save As..."
 msgstr "Lưu thành..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Kiểm tra cập nhật"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Bật kiểm tra cập nhật tự động"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Kiểm tra mỗi:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "(các) ngày"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr ""
 
@@ -1574,22 +1558,6 @@ msgid ""
 "Automatically save downloaded subtitles to the first autoload path folder"
 msgstr ""
 "Tự động lưu phụ đề đã tải xuống vào thư mục đường dẫn tự động nạp trước tiên"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Cập nhật trình kiểm tra"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "&Tải xuống ngay"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "&Nhắc tôi sau"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Bỏ qua bản cập nhật này"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""

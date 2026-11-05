@@ -1228,22 +1228,6 @@ msgid "Save As..."
 msgstr "Salvează ca..."
 
 msgctxt "IDD_PPAGEMISC_IDC_STATIC"
-msgid "Update check"
-msgstr "Verifică pentru actualizări"
-
-msgctxt "IDD_PPAGEMISC_IDC_CHECK1"
-msgid "Enable automatic update check"
-msgstr "Activează verificarea automată a actualizărilor"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC5"
-msgid "Check every:"
-msgstr "Verifică la fiecare:"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC6"
-msgid "day(s)"
-msgstr "zi (zile)"
-
-msgctxt "IDD_PPAGEMISC_IDC_STATIC"
 msgid "Color controls"
 msgstr "Controale de culoare (Comenzi de culoare)"
 
@@ -1594,22 +1578,6 @@ msgid ""
 msgstr ""
 "Salvează automat subtitrările descărcate în primul dosar (folder) de cale de"
 " încărcare automată"
-
-msgctxt "IDD_UPDATE_DIALOG_CAPTION"
-msgid "Update Checker"
-msgstr "Verificator de actualizări"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_DL_BUTTON"
-msgid "&Download now"
-msgstr "&Descarcă acum"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_LATER_BUTTON"
-msgid "Remind me &later"
-msgstr "Amintește-mi mai &târziu"
-
-msgctxt "IDD_UPDATE_DIALOG_IDC_UPDATE_IGNORE_BUTTON"
-msgid "&Ignore this update"
-msgstr "&Ignoră această actualizare"
 
 msgctxt "IDD_PPAGESHADERS_IDC_STATIC"
 msgid ""
