@@ -382,3 +382,60 @@ void MediaTransControls::UpdateTimelineProperties(REFERENCE_TIME startTime, REFE
     // Update the timeline
     smtc_controls2->UpdateTimelineProperties(timeline);
 }
+
+HRESULT MediaTransControls::SetMusicProperties(const CString& title, const CString& artist, const MediaMetadata& meta)
+{
+    if (!smtc_updater) {
+        return E_UNEXPECTED;
+    }
+
+    HRESULT ret = smtc_updater->put_Type(MediaPlaybackType_Music);
+    if (ret != S_OK) {
+        TRACE(_T("MediaTransControls: put_Type error %ld\n"), ret);
+        return ret;
+    }
+
+    CComPtr<IMusicDisplayProperties> pMusic;
+    ret = smtc_updater->get_MusicProperties(&pMusic);
+    if (ret != S_OK) {
+        TRACE(_T("MediaTransControls: get_MusicProperties error %ld\n"), ret);
+        return ret;
+    }
+
+    if (!title.IsEmpty()) {
+        ret = SmtcPutString(pMusic.p, &IMusicDisplayProperties::put_Title, title);
+        ASSERT(ret == S_OK);
+    }
+    const CString& shownArtist = artist.IsEmpty() ? meta.albumArtist : artist;
+    if (!shownArtist.IsEmpty()) {
+        ret = SmtcPutString(pMusic.p, &IMusicDisplayProperties::put_Artist, shownArtist);
+        ASSERT(ret == S_OK);
+    }
+
+    // The album fields are written even when empty: the updater keeps its values
+    ret = SmtcPutString(pMusic.p, &IMusicDisplayProperties::put_AlbumArtist, meta.albumArtist);
+    ASSERT(ret == S_OK);
+
+    // Windows 10 and later
+    if (CComQIPtr<IMusicDisplayProperties2> pMusic2 = pMusic) {
+        ret = SmtcPutString(pMusic2.p, &IMusicDisplayProperties2::put_AlbumTitle, meta.album);
+        ASSERT(ret == S_OK);
+        ret = pMusic2->put_TrackNumber(meta.track);
+        ASSERT(ret == S_OK);
+
+        CComPtr<__FIVector_1_HSTRING> pGenres;
+        if (pMusic2->get_Genres(&pGenres) == S_OK && pGenres) {
+            pGenres->Clear();
+            if (!meta.genre.IsEmpty()) {
+                // the vector copies the borrowed string
+                pGenres->Append(HStringReference(meta.genre.GetString(), (unsigned int)meta.genre.GetLength()).Get());
+            }
+        }
+    }
+    if (CComQIPtr<IMusicDisplayProperties3> pMusic3 = pMusic) {
+        ret = pMusic3->put_AlbumTrackCount(meta.trackCount);
+        ASSERT(ret == S_OK);
+    }
+
+    return S_OK;
+}

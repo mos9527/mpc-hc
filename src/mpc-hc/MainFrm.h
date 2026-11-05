@@ -51,6 +51,7 @@
 #include "AppSettings.h"
 #include "../filters/transform/VSFilter/IDirectVobSub.h"
 #include "MediaTransControls.h"
+#include "MediaMetadata.h"
 #include "FavoriteOrganizeDlg.h"
 #include "AllocatorCommon.h"
 #include <deque>
@@ -342,6 +343,7 @@ private:
         float fTrackGain = 0.0f, fAlbumGain = 0.0f; // dB
         float fTrackPeak = 0.0f, fAlbumPeak = 0.0f; // 0 = unknown
     } m_replayGain;
+    MediaMetadata m_mediaMeta; // album fields and lyrics, read only while MLS::LOADED
     static bool ParseReplayGainValue(LPCWSTR str, float& value);
     void ApplyReplayGain();
     void SetBalance(int balance);
@@ -418,6 +420,10 @@ private:
     void SetupFiltersSubMenu();
     void SetupAudioSubMenu();
     void SetupSubtitlesSubMenu();
+    // audio only: the Subtitles menu chooses how lyrics are shown (MainFrmLyrics.cpp)
+    void SetupLyricsSubMenu(CMPCThemeMenu& subMenu);
+    void OnLyricsSubMenu(int i);
+    bool ToggleLyricsDisplay();
     void SetupSecondarySubtitleSubMenu();
     void SetupVideoStreamsSubMenu();
     void SetupJumpToSubMenus(CMenu* parentMenu = nullptr, int iInsertPos = -1);

@@ -4630,6 +4630,7 @@ LRESULT CMainFrame::OnFilePostOpenmedia(WPARAM wParam, LPARAM lParam)
     if (m_fAudioOnly || HasDedicatedFSVideoWindow()) {
         UpdateControlState(CMainFrame::UPDATE_MEDIA_ART);
     }
+    m_wndView.UpdateLyrics();
 
     if (s.bOpenRecPanelWhenOpeningDevice) {
         if (GetPlaybackMode() == PM_DIGITAL_CAPTURE) {
@@ -4928,6 +4929,7 @@ void CMainFrame::OnFilePostClosemedia(bool bNextIsQueued/* = false*/)
     m_AudDispName.Empty();
     m_HWAccelType = L"";
 
+    m_wndView.UpdateLyrics(bNextIsQueued);
     if (!bNextIsQueued) {
         UpdateControlState(CMainFrame::UPDATE_MEDIA_ART);
         RecalcLayout();
@@ -5108,6 +5110,9 @@ void CMainFrame::OnStreamSubOnOff()
         return;
     }
 
+    if (m_fAudioOnly && ToggleLyricsDisplay()) {
+        return;
+    }
     if (m_pCAP && !m_pSubStreams.IsEmpty() || m_pDVS) {
         ToggleSubtitleOnOff(true);
         SetFocus();
@@ -11206,6 +11211,11 @@ void CMainFrame::OnPlaySubtitles(UINT nID)
     CAppSettings& s = AfxGetAppSettings();
     int i = (int)nID - ID_SUBTITLES_SUBITEM_START;
 
+    if (m_fAudioOnly) {
+        OnLyricsSubMenu(i);
+        return;
+    }
+
     if (GetPlaybackMode() == PM_DVD) {
         ULONG ulStreamsAvailable, ulCurrentStream;
         BOOL bIsDisabled;
@@ -17140,6 +17150,7 @@ bool CMainFrame::OpenMediaPrivate(CAutoPtr<OpenMediaData> pOMD)
     m_fValidDVDOpen = false;
     m_iDefRotation = 0;
     m_replayGain = ReplayGainInfo();
+    m_mediaMeta.Clear();
 
     OpenFileData* pFileData = dynamic_cast<OpenFileData*>(pOMD.m_p);
     OpenDVDData* pDVDData = dynamic_cast<OpenDVDData*>(pOMD.m_p);
@@ -17367,6 +17378,7 @@ bool CMainFrame::OpenMediaPrivate(CAutoPtr<OpenMediaData> pOMD)
             }
 
             defaultVideoAngle = 0;
+            m_mediaMeta.Load(m_pGB, fn, m_fAudioOnly, m_wndPlaylistBar);
             if (m_pFSF && (m_pCAP2 || m_pCAP3 || m_pAudioSwitcherSS)) {
                 CComQIPtr<IBaseFilter> pBF = m_pFSF;
                 if (GetCLSID(pBF) == GUID_LAVSplitter || GetCLSID(pBF) == GUID_LAVSplitterSource) {
@@ -18383,6 +18395,7 @@ void CMainFrame::SetupSubtitlesSubMenu()
     while (subMenu.RemoveMenu(0, MF_BYPOSITION));
 
     if (GetLoadState() != MLS::LOADED || m_fAudioOnly) {
+        SetupLyricsSubMenu(subMenu);
         return;
     }
 
@@ -25415,26 +25428,9 @@ void CMainFrame::MediaTransportControlSetMedia() {
 
         // Set media details
         if (m_fAudioOnly) {
-            ret = m_media_trans_control.smtc_updater->put_Type(ABI::Windows::Media::MediaPlaybackType_Music);
+            ret = m_media_trans_control.SetMusicProperties(title, author, m_mediaMeta);
             if (ret != S_OK) {
-                TRACE(_T("MediaTransControls: put_Type error %ld\n"), ret);
                 return;
-            }
-
-            CComPtr<ABI::Windows::Media::IMusicDisplayProperties> pMusicDisplayProperties;
-            ret = m_media_trans_control.smtc_updater->get_MusicProperties(&pMusicDisplayProperties);
-            if (ret != S_OK) {
-                TRACE(_T("MediaTransControls: get_MusicProperties error %ld\n"), ret);
-                return;
-            }
-
-            if (!title.IsEmpty()) {
-                ret = SmtcPutString(pMusicDisplayProperties.p, &ABI::Windows::Media::IMusicDisplayProperties::put_Title, title);
-                ASSERT(ret == S_OK);
-            }
-            if (!author.IsEmpty()) {
-                ret = SmtcPutString(pMusicDisplayProperties.p, &ABI::Windows::Media::IMusicDisplayProperties::put_Artist, author);
-                ASSERT(ret == S_OK);
             }
         } else {
             ret = m_media_trans_control.smtc_updater->put_Type(ABI::Windows::Media::MediaPlaybackType_Video);
@@ -25541,6 +25537,8 @@ void CMainFrame::MediaTransportControlSetMedia() {
             TRACE(_T("MediaTransControls: put_IsEnabled error %ld\n"), ret);
             return;
         }
+        // close() clears this on every CloseMedia, and Init() only runs once
+        m_media_trans_control.m_active = true;
 
         // ISystemMediaTransportControls2: playback rate, repeat/shuffle state and timeline
         m_media_trans_control.SetPlaybackRate(m_dSpeedRate);

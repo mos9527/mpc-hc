@@ -35,6 +35,7 @@
 #define WM_SMTC_RATE        (WM_APP + 903)
 
 class CMainFrame;
+struct MediaMetadata;
 
 // Calls a WinRT string property setter. The callee only borrows an input HSTRING (it
 // copies the value if it keeps it), so the string is released here after the call.
@@ -104,6 +105,10 @@ public:
     void SetShuffleEnabled(bool enabled);
     void SetPlaybackRate(double rate);
     void UpdateTimelineProperties(REFERENCE_TIME startTime, REFERENCE_TIME endTime, REFERENCE_TIME position);
+
+    // Music type and display properties. Title and artist are skipped when empty, the
+    // album fields are always written so that no value of the previous track remains.
+    HRESULT SetMusicProperties(const CString& title, const CString& artist, const MediaMetadata& meta);
 
     // Payloads of the WM_SMTC_SEEK/WM_SMTC_RATE messages, written by the SMTC
     // callback threads and read by the main frame handlers on the UI thread

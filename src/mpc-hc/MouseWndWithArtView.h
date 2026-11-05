@@ -41,6 +41,15 @@ public:
     void SetVideoRect(const CRect& r = CRect(0, 0, 0, 0));
     CRect GetVideoRect() const { return m_vrect; }
 
+    // Call when lyrics may have changed (media opened or closed, display mode changed).
+    // bKeepLayout keeps the lyrics area, empty, while the next queued file loads.
+    void UpdateLyrics(bool bKeepLayout = false);
+
+    // How lyrics are shown in the audio-only view, saved in the settings
+    enum class LyricsMode { Panel = 0, Line = 1, Off = 2 };
+    static LyricsMode GetLyricsMode();
+    static void SetLyricsMode(LyricsMode mode);
+
 protected:
     CMPCPngImage m_img;
     CImage m_resizedImg;
@@ -50,8 +59,28 @@ protected:
 
     void LoadImgInternal(HGDIOBJ hImg);
 
+    // Cover rectangle centred in area, with m_resizedImg scaled to it; empty without an image
+    CRect PrepareArt(const CRect& area);
+
+    // Lyrics, read from CMainFrame::m_mediaMeta while the media is loaded
+    enum class LyricsView { None, Panel, Line };
+    LyricsView m_lyricsView = LyricsView::None;
+    int m_nLyricsLine = -1;
+    CRect m_rcLyrics;
+    CFont m_lyricsFont, m_lyricsFontBold, m_lyricsLineFont;
+    int m_nLyricsFontPx = 0, m_nLyricsLineFontPx = 0;
+
+    bool HasLyrics() const;
+    void SplitLyricsLayout(const CRect& client, CRect& art, CRect& lyrics) const;
+    CRect LyricsLineRect(const CRect& client);
+    void DrawLyrics(CDC* pDC, const CRect& rc);
+    void DrawLyricsLine(CDC* pDC, const CRect& rc, const CRect& art);
+    void EnsureLyricsFonts(int px);
+    void EnsureLyricsLineFont(int px);
+
     DECLARE_MESSAGE_MAP()
 
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+    afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 };

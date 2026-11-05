@@ -596,6 +596,15 @@
     <ClCompile Include="MediaTransControls.cpp">
       <Filter>Main View</Filter>
     </ClCompile>
+    <ClCompile Include="Lyrics.cpp">
+      <Filter>Main View</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaMetadata.cpp">
+      <Filter>Main View</Filter>
+    </ClCompile>
+    <ClCompile Include="MainFrmLyrics.cpp">
+      <Filter>Main View</Filter>
+    </ClCompile>
     <ClCompile Include="ModelessResizableDialog.cpp">
       <Filter>Modal Dialogs</Filter>
     </ClCompile>
@@ -1188,6 +1197,12 @@
       <Filter>Toolbars</Filter>
     </ClInclude>
     <ClInclude Include="MediaTransControls.h">
+      <Filter>Main View</Filter>
+    </ClInclude>
+    <ClInclude Include="Lyrics.h">
+      <Filter>Main View</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaMetadata.h">
       <Filter>Main View</Filter>
     </ClInclude>
     <ClInclude Include="SMTC2Compat.h">
