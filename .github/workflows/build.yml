@@ -1,0 +1,101 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore: ['docs/**', '**/*.md']
+  pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  x64:
+    # VS 2022 image: v143 is its default toolset, ATL/MFC included. The VS 2026 images
+    # (windows-2025, windows-latest) ship v143 without its ATL/MFC, and installing those
+    # there with the Visual Studio installer did not finish within 10+ minutes.
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # update_version.bat derives the revision from the commits since the last tag
+          fetch-depth: 0
+          filter: blob:none
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Fails fast, before the long build, when the pinned LAV Filters changed
+      # and no matching bundle was published (see ci/prebuilt.py)
+      - name: Fetch prebuilt LAV Filters
+        run: python ci/prebuilt.py fetch
+
+      # Everything except what only the LAV Filters build needs: its msvc\libs
+      # (dav1d, libxml2, speex) and LAV's own libbluray/qsdecoder. LAV's source
+      # tree and its ffmpeg are still needed, for the settings headers and for
+      # the ffmpeg subset the player links statically (src\thirdparty\ffmpeg).
+      - name: Check out submodules
+        run: |
+          $skip = @('src/thirdparty/LAVFilters/msvc/libs/', 'tests')
+          $paths = git config -f .gitmodules --get-regexp '\.path$' | ForEach-Object { ($_ -split ' ', 2)[1] } |
+            Where-Object { $p = $_; -not ($skip | Where-Object { $p.StartsWith($_) }) }
+          function Update-Submodule($repo, $path) {
+            git -C $repo submodule update --init --depth 1 --jobs 4 -- $path
+            if ($LASTEXITCODE -ne 0) {
+              # some hosts refuse fetching a pinned commit that is not a branch tip
+              Write-Host "::warning::shallow checkout of $path failed, fetching full history"
+              git -C "$repo/$path" fetch --unshallow
+              git -C $repo submodule update --init -- $path
+              if ($LASTEXITCODE -ne 0) { exit 1 }
+            }
+          }
+          foreach ($p in $paths) { Update-Submodule . $p }
+          Update-Submodule src/thirdparty/LAVFilters/src ffmpeg
+
+      - uses: ilammy/setup-nasm@v1
+
+      # Check only, never install: if a future image lacks v143's ATL/MFC, fail here
+      # in seconds with the reason instead of MSB8041 halfway through the build
+      - name: Check ATL/MFC for v143
+        run: python ci/vstools.py
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Stamp version
+        shell: cmd
+        run: call update_version.bat
+
+      # Only the player and what it references; the solution's LAVFilters
+      # project is not a dependency, so it is skipped
+      - name: Build mpc-hc
+        run: msbuild mpc-hc.sln -t:"Apps\mpc-hc" -p:Configuration=Release -p:Platform=x64 -m -nologo -v:minimal
+
+      - name: Build mpciconlib
+        run: msbuild mpciconlib.sln -p:Configuration=Release -p:Platform=x64 -m -nologo -v:minimal
+
+      - name: Package
+        id: package
+        run: python ci/package.py --out dist/pkg --pdb-out dist/pdb --github-output
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: dist/pkg
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.name }}.pdb
+          path: dist/pdb
+          if-no-files-found: warn
