@@ -41,6 +41,11 @@ jobs:
       - name: Fetch prebuilt LAV Filters
         run: python ci/prebuilt.py fetch
 
+      # MPC Video Renderer (its own releases) and MediaInfo.dll (upstream's package),
+      # pinned in ci/extras.json; also notes when a newer release is out
+      - name: Fetch third-party runtime files
+        run: python ci/extras.py
+
       # Everything except what only the LAV Filters build needs: its msvc\libs
       # (dav1d, libxml2, speex) and LAV's own libbluray/qsdecoder. LAV's source
       # tree and its ffmpeg are still needed, for the settings headers and for

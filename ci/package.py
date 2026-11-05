@@ -21,8 +21,13 @@ BIN_DIR = ROOT / "bin" / "mpc-hc_x64"
 LAV_OUT = "LAVFilters64"
 
 REQUIRED = ["mpc-hc64.exe", "mpciconlib.dll", f"{LAV_OUT}/LAVSplitter.ax",
-            f"{LAV_OUT}/LAVVideo.ax", f"{LAV_OUT}/LAVAudio.ax"]
+            f"{LAV_OUT}/LAVVideo.ax", f"{LAV_OUT}/LAVAudio.ax",
+            # not built here, see ci/extras.py
+            "MPCVR/MpcVideoRenderer64.ax", "MediaInfo.dll"]
 OPTIONAL = ["d3dx9_43.dll"]  # bundled with the prebuilt LAV Filters, see ci/prebuilt.py
+# Not packaged: CrashReporter\ (crashrpt/sendrpt in distrib\x64). It is only used when
+# the player is built with MPC_DRDUMP=1 (USE_DRDUMP_CRASH_REPORTER), which sends crash
+# reports to upstream's DrDump account; CI does not set it.
 
 
 def die(msg):
@@ -72,7 +77,7 @@ def main():
     if out.exists():
         shutil.rmtree(out)
 
-    for f in REQUIRED[:2] + [f for f in OPTIONAL if (BIN_DIR / f).is_file()]:
+    for f in [f for f in REQUIRED if not f.startswith(LAV_OUT + "/")] + [f for f in OPTIONAL if (BIN_DIR / f).is_file()]:
         copy(BIN_DIR / f, out / f)
     for pattern in ("*.ax", "*.dll", "*.manifest"):
         for f in (BIN_DIR / LAV_OUT).glob(pattern):
@@ -80,6 +85,11 @@ def main():
     for sub, shaders in (("Shaders", "dx9"), ("Shaders11", "dx11")):
         for f in (ROOT / "src" / "mpc-hc" / "res" / "shaders" / shaders).glob("*.hlsl"):
             copy(f, out / sub / f.name)
+    # the SVG toolbar themes, as the installer ships them (distrib\mpc-hc_setup.iss)
+    toolbars = ROOT / "distrib" / "Toolbars"
+    for f in toolbars.rglob("*"):
+        if f.is_file():
+            copy(f, out / "Toolbars" / f.relative_to(toolbars))
     copy(ROOT / "COPYING.txt", out / "COPYING.txt")
 
     if args.pdb_out:

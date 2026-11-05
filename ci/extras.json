@@ -1,0 +1,24 @@
+{
+  "mpcvr": {
+    "description": "MPC Video Renderer (MPC-BE team)",
+    "repo": "Aleksoid1978/VideoRenderer",
+    "tag": "0.11.1",
+    "asset": "MpcVideoRenderer-0.11.1.2636.zip",
+    "asset_pattern": "^MpcVideoRenderer-[\\d.]+\\.zip$",
+    "sha256": "c7cb676590c6c6d923f48c68f8bca1171fbb579e89a8ebd7afc7aeba13cf4601",
+    "files": {
+      "MpcVideoRenderer64.ax": "MPCVR/MpcVideoRenderer64.ax"
+    }
+  },
+  "mediainfo": {
+    "description": "MediaInfoLib (MediaArea), taken from upstream's stable package",
+    "repo": "clsid2/mpc-hc",
+    "tag": "2.8.4",
+    "asset": "MPC-HC.2.8.4.x64.zip",
+    "asset_pattern": "^MPC-HC\\.[\\d.]+\\.x64\\.zip$",
+    "sha256": "9feb91e27407ec048d7fe3722db0f5f06debf9841d7879bd920ab787f9b098ae",
+    "files": {
+      "MediaInfo.dll": "MediaInfo.dll"
+    }
+  }
+}
