@@ -792,12 +792,6 @@ IDD_PPAGEMISC DIALOGEX 0, 0, 355, 289
 STYLE DS_SETFONT | WS_CHILD
 FONT 9, "Segoe UI", 400, 0, 0x1
 BEGIN
-    GROUPBOX        "Update check",IDC_STATIC,6,6,225,48
-    CONTROL         "Enable automatic update check",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,21,213,8
-    LTEXT           "Check every:",IDC_STATIC5,12,36,132,8
-    EDITTEXT        IDC_EDIT1,144,34,36,13,ES_CENTER | ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS | UDS_NOTHOUSANDS | UDS_HOTTRACK,180,34,16,14
-    LTEXT           "day(s)",IDC_STATIC6,186,36,39,8
     GROUPBOX        "Color controls",IDC_STATIC,237,6,112,48
     PUSHBUTTON      "Open",IDC_COLOR_CONTROLS,243,27,100,14
     GROUPBOX        "Settings management",IDC_STATIC,6,60,343,34
@@ -973,18 +967,6 @@ BEGIN
     CONTROL         "",IDC_LIST1,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,14,175,326,88
     CONTROL         "Automatically save downloaded subtitles to the first autoload path folder",IDC_CHECK_AUTOSAVE_ONLINE_SUBTITLE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,269,327,8
-END
-
-IDD_UPDATE_DIALOG DIALOGEX 0, 0, 265, 90
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Update Checker"
-FONT 9, "Segoe UI", 400, 0, 0x1
-BEGIN
-    ICON            "",IDC_UPDATE_ICON,6,8,21,20,SS_CENTERIMAGE
-    LTEXT           "",IDC_UPDATE_DLG_TEXT,36,4,223,32
-    DEFPUSHBUTTON   "&Download now",IDC_UPDATE_DL_BUTTON,20,50,110,14
-    PUSHBUTTON      "Remind me &later",IDC_UPDATE_LATER_BUTTON,135,50,110,14
-    PUSHBUTTON      "&Ignore this update",IDC_UPDATE_IGNORE_BUTTON,20,68,225,14
 END
 
 IDD_PPAGESHADERS DIALOGEX 0, 0, 355, 289
@@ -1463,10 +1445,6 @@ BEGIN
     BEGIN
     END
 
-    IDD_UPDATE_DIALOG, DIALOG
-    BEGIN
-    END
-
     IDD_PPAGESHADERS, DIALOG
     BEGIN
         VERTGUIDE, 153
@@ -1837,7 +1815,6 @@ BEGIN
     POPUP "&Help"
     BEGIN
         MENUITEM "&Home Page",                  ID_HELP_HOMEPAGE
-        MENUITEM "Check for &updates",          ID_HELP_CHECKFORUPDATE
         MENUITEM "&Command Line Switches",      ID_HELP_SHOWCOMMANDLINESWITCHES
         MENUITEM "Download &Toolbar Images",    ID_HELP_TOOLBARIMAGES
         MENUITEM "&Donate",                     ID_HELP_DONATE
@@ -2352,7 +2329,6 @@ BEGIN
         POPUP "&Help"
         BEGIN
             MENUITEM "&Home Page",                  ID_HELP_HOMEPAGE
-            MENUITEM "Check for &updates",          ID_HELP_CHECKFORUPDATE
             MENUITEM "&Command Line Switches",      ID_HELP_SHOWCOMMANDLINESWITCHES
             MENUITEM "Download &Toolbar Images",    ID_HELP_TOOLBARIMAGES
             MENUITEM "&Donate",                     ID_HELP_DONATE
@@ -3351,8 +3327,6 @@ BEGIN
     IDS_SUBDL_DLG_PARSING   "Parsing list..."
     IDS_SUBDL_DLG_NOT_FOUND "No subtitles found."
     IDS_SUBDL_DLG_SUBS_AVAIL "%d subtitle(s) available."
-    IDS_UPDATE_CONFIG_AUTO_CHECK 
-                            "Do you want to check periodically for MPC-HC updates?\n\nThis feature can be disabled later from the Miscellaneous options page."
     IDS_ZOOM_50             "50%"
     IDS_ZOOM_100            "100%"
     IDS_ZOOM_200            "200%"
@@ -3361,8 +3335,6 @@ BEGIN
     IDS_OSD_ZOOM_AUTO_LARGER "Zoom: Auto (Larger Only)"
     IDS_TOOLTIP_EXPLORE_TO_FILE "Double click to open file location"
     IDS_TOOLTIP_REMAINING_TIME "Toggle between elapsed and remaining time"
-    IDS_UPDATE_DELAY_ERROR_TITLE "Invalid delay"
-    IDS_UPDATE_DELAY_ERROR_MSG "Please enter a number between 1 and 365."
 END
 
 STRINGTABLE
@@ -3866,12 +3838,6 @@ BEGIN
     IDS_SATURATION_INC      "Saturation increase"
     IDS_SATURATION_DEC      "Saturation decrease"
     IDS_RESET_COLOR         "Reset color settings"
-    IDS_USING_LATEST_STABLE "\nYou are already using the latest stable version."
-    IDS_USING_NEWER_VERSION "Your current version is v%s.\n\nThe latest stable version is v%s."
-    IDS_NEW_UPDATE_AVAILABLE 
-                            "MPC-HC v%s is now available. You are using v%s.\n\nDo you want to visit MPC-HC's website to download it?"
-    IDS_UPDATE_ERROR        "Update server not found.\n\nPlease check your internet connection or try again later."
-    IDS_UPDATE_CLOSE        "&Close"
     IDS_OSD_ZOOM            "Zoom: %.0lf%%"
 END
 

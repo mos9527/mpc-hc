@@ -33,8 +33,6 @@
 
 #define WEBSITE_URL  _T("https://github.com/clsid2/mpc-hc/releases")
 #define DOWNLOAD_URL _T("https://github.com/clsid2/mpc-hc/releases")
-#define UPDATE_URL   _T("https://github.com/clsid2/mpc-hc/raw/develop/version.txt")
-#define BACKUP_UPDATE_URL   _T("https://cdn.jsdelivr.net/gh/clsid2/mpc-hc@develop/version.txt")
 #define TRAC_URL     _T("https://github.com/clsid2/mpc-hc/issues")
 #define BUGS_URL     _T("https://github.com/clsid2/mpc-hc/issues")
 

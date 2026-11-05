@@ -34,14 +34,6 @@ class CPPageMisc : public CMPCThemePPageBase
 {
     DECLARE_DYNAMIC(CPPageMisc)
 
-private:
-    CMPCThemeRadioOrCheck m_updaterAutoCheckCtrl;
-    CMPCThemeEdit m_updaterDelayCtrl;
-    CMPCThemeSpinButtonCtrl m_updaterDelaySpin;
-
-    int m_nUpdaterAutoCheck;
-    int m_nUpdaterDelay;
-
 public:
     CPPageMisc();
     virtual ~CPPageMisc();
@@ -52,19 +44,15 @@ public:
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
     virtual BOOL OnInitDialog();
-    virtual BOOL OnApply();
 
     DECLARE_MESSAGE_MAP()
 
 public:
     CMPCThemeButton m_ExportKeys;
 
-    afx_msg void OnUpdateDelayEditBox(CCmdUI* pCmdUI);
-
     afx_msg void OnResetSettings();
     afx_msg void OnExportSettings();
     afx_msg void OnExportKeys();
     afx_msg void OnColorControls();
 
-    void AdjustDynamicWidgets();
 };

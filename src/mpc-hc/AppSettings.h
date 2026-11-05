@@ -906,8 +906,6 @@ public:
     int             iContrast;
     int             iHue;
     int             iSaturation;
-    int             nUpdaterAutoCheck;
-    int             nUpdaterDelay;
 
     // MENUS
     // View

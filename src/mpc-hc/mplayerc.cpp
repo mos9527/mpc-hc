@@ -36,7 +36,6 @@
 #include "PathUtils.h"
 #include "RedirectWaitDlg.h"
 #include "Struct.h"
-#include "UpdateChecker.h"
 #include "WebServer.h"
 #include "WinAPIUtils.h"
 #include "mpc-hc_config.h"
@@ -2492,18 +2491,6 @@ BOOL CMPlayerCApp::InitInstance()
     m_s->WinLircClient.SetHWND(m_pMainWnd->m_hWnd);
     if (m_s->fWinLirc) {
         m_s->WinLircClient.Connect(m_s->strWinLircAddr);
-    }
-
-    if (UpdateChecker::IsAutoUpdateEnabled()) {
-        UpdateChecker::CheckForUpdate(true);
-    }
-
-    if (!m_pMainWnd) {
-        // The first-run "enable automatic update checks?" prompt above is modal, so it pumps
-        // messages. If the user closed the player while it was up, the main frame is already
-        // destroyed and MFC has cleared m_pMainWnd. Abort startup instead of dereferencing it;
-        // AfxWinMain skips Run() and calls ExitInstance(), so the settings still get saved.
-        return FALSE;
     }
 
     SendCommandLine(m_pMainWnd->m_hWnd);

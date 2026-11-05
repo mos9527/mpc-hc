@@ -21,6 +21,7 @@
 #include <sdkddkver.h>
 #include <atlbase.h>
 #include <windows.media.h>
+#include <winstring.h>
 #include "SMTC2Compat.h"
 #include <atomic>
 
@@ -34,6 +35,20 @@
 #define WM_SMTC_RATE        (WM_APP + 903)
 
 class CMainFrame;
+
+// Calls a WinRT string property setter. The callee only borrows an input HSTRING (it
+// copies the value if it keeps it), so the string is released here after the call.
+template <class I>
+HRESULT SmtcPutString(I* obj, HRESULT (STDMETHODCALLTYPE I::*put)(HSTRING), const CString& value)
+{
+    HSTRING h = nullptr;
+    HRESULT hr = WindowsCreateString(value.GetString(), value.GetLength(), &h);
+    if (SUCCEEDED(hr)) {
+        hr = (obj->*put)(h);
+        WindowsDeleteString(h);
+    }
+    return hr;
+}
 
 class MediaTransControls {
 public:

@@ -361,9 +361,6 @@
     <ClCompile Include="TunerScanDlg.cpp">
       <Filter>Modal Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="UpdateCheckerDlg.cpp">
-      <Filter>Modal Dialogs</Filter>
-    </ClCompile>
     <ClCompile Include="VersionInfo.cpp">
       <Filter>Build Info</Filter>
     </ClCompile>
@@ -411,7 +408,6 @@
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="Playlist.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="UpdateChecker.cpp" />
     <ClCompile Include="ChildView.cpp">
       <Filter>Main View</Filter>
     </ClCompile>
@@ -943,9 +939,6 @@
     <ClInclude Include="TunerScanDlg.h">
       <Filter>Modal Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="UpdateCheckerDlg.h">
-      <Filter>Modal Dialogs</Filter>
-    </ClInclude>
     <ClInclude Include="VersionInfo.h">
       <Filter>Build Info</Filter>
     </ClInclude>
@@ -1000,7 +993,6 @@
     <ClInclude Include="Playlist.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="UpdateChecker.h" />
     <ClInclude Include="CoverArt.h">
       <Filter>Main View</Filter>
     </ClInclude>

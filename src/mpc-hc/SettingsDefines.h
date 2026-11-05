@@ -368,10 +368,6 @@
 #define IDS_RS_HIGH_PRECISION_TIMER         _T("HighPrecisionTimer")
 #define IDS_RS_TIMER_SHOW_PERCENTAGE        _T("TimerShowPercentage")
 
-#define IDS_RS_UPDATER_AUTO_CHECK           _T("UpdaterAutoCheck")
-#define IDS_RS_UPDATER_LAST_CHECK           _T("UpdaterLastCheck")
-#define IDS_RS_UPDATER_DELAY                _T("UpdaterDelay")
-#define IDS_RS_UPDATER_IGNORE_VERSION       _T("UpdaterIgnoreVersion")
 
 #define IDS_RS_JPEG_QUALITY                 _T("JpegQuality")
 

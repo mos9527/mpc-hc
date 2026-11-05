@@ -33,8 +33,6 @@
 IMPLEMENT_DYNAMIC(CPPageMisc, CMPCThemePPageBase)
 CPPageMisc::CPPageMisc()
     : CMPCThemePPageBase(CPPageMisc::IDD, CPPageMisc::IDD)
-    , m_nUpdaterAutoCheck(0)
-    , m_nUpdaterDelay(7)
 {
 }
 
@@ -46,18 +44,6 @@ void CPPageMisc::DoDataExchange(CDataExchange* pDX)
 {
     __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EXPORT_KEYS, m_ExportKeys);
-    DDX_Check(pDX, IDC_CHECK1, m_nUpdaterAutoCheck);
-    DDX_Text(pDX, IDC_EDIT1, m_nUpdaterDelay);
-    DDX_Control(pDX, IDC_CHECK1, m_updaterAutoCheckCtrl);
-    DDX_Control(pDX, IDC_EDIT1, m_updaterDelayCtrl);
-    DDX_Control(pDX, IDC_SPIN1, m_updaterDelaySpin);
-
-    // Validate the delay between each check
-    if (pDX->m_bSaveAndValidate && (m_nUpdaterDelay < 1 || m_nUpdaterDelay > 365)) {
-        m_updaterDelayCtrl.ShowBalloonTip(ResStr(IDS_UPDATE_DELAY_ERROR_TITLE), ResStr(IDS_UPDATE_DELAY_ERROR_MSG), TTI_ERROR);
-        pDX->PrepareEditCtrl(IDC_EDIT1);
-        pDX->Fail();
-    }
 }
 
 
@@ -66,10 +52,6 @@ BEGIN_MESSAGE_MAP(CPPageMisc, CMPCThemePPageBase)
     ON_BN_CLICKED(IDC_EXPORT_SETTINGS, OnExportSettings)
     ON_BN_CLICKED(IDC_EXPORT_KEYS, OnExportKeys)
     ON_BN_CLICKED(IDC_COLOR_CONTROLS, OnColorControls)
-    ON_UPDATE_COMMAND_UI(IDC_EDIT1, OnUpdateDelayEditBox)
-    ON_UPDATE_COMMAND_UI(IDC_SPIN1, OnUpdateDelayEditBox)
-    ON_UPDATE_COMMAND_UI(IDC_STATIC5, OnUpdateDelayEditBox)
-    ON_UPDATE_COMMAND_UI(IDC_STATIC6, OnUpdateDelayEditBox)
 END_MESSAGE_MAP()
 
 
@@ -79,39 +61,15 @@ BOOL CPPageMisc::OnInitDialog()
 {
     __super::OnInitDialog();
 
-    const CAppSettings& s = AfxGetAppSettings();
-
     CreateToolTip();
 
     if (AfxGetMyApp()->IsIniValid()) {
         m_ExportKeys.EnableWindow(FALSE);
     }
 
-    m_nUpdaterAutoCheck = s.nUpdaterAutoCheck;
-    m_nUpdaterDelay = s.nUpdaterDelay;
-    m_updaterDelaySpin.SetRange32(1, 365);
-
-    AdjustDynamicWidgets();
     UpdateData(FALSE);
 
     return TRUE;
-}
-
-BOOL CPPageMisc::OnApply()
-{
-    UpdateData();
-
-    CAppSettings& s = AfxGetAppSettings();
-
-    s.nUpdaterAutoCheck = m_nUpdaterAutoCheck;
-    s.nUpdaterDelay = m_nUpdaterDelay;
-
-    return __super::OnApply();
-}
-
-void CPPageMisc::OnUpdateDelayEditBox(CCmdUI* pCmdUI)
-{
-    pCmdUI->Enable(m_updaterAutoCheckCtrl.GetCheck() == BST_CHECKED);
 }
 
 void CPPageMisc::OnResetSettings()
@@ -187,8 +145,4 @@ void CPPageMisc::OnColorControls()
 {
     GetParent()->PostMessage(PSM_PRESSBUTTON, PSBTN_OK);
     AfxGetMainFrame()->PostMessage(WM_COMMAND, ID_COLOR_CONTROLS);
-}
-
-void CPPageMisc::AdjustDynamicWidgets() {
-    AdjustDynamicWidgetPair(this, IDC_STATIC5, IDC_EDIT1);
 }

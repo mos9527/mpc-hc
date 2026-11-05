@@ -60,7 +60,6 @@
 #include "CrashReporter.h"
 #include "KeyProvider.h"
 #include "Translations.h"
-#include "UpdateChecker.h"
 #include "WebServer.h"
 #include <ISOLang.h>
 #include <PathUtils.h>
@@ -646,7 +645,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_COMMAND(ID_RECENT_FILES_SHOW_HISTORY, OnShowHistory)
 
     ON_COMMAND(ID_HELP_HOMEPAGE, OnHelpHomepage)
-    ON_COMMAND(ID_HELP_CHECKFORUPDATE, OnHelpCheckForUpdate)
     ON_COMMAND(ID_HELP_TOOLBARIMAGES, OnHelpToolbarImages)
     ON_COMMAND(ID_HELP_DONATE, OnHelpDonate)
 
@@ -12818,11 +12816,6 @@ void CMainFrame::OnUpdateFavoritesDevice(CCmdUI* pCmdUI)
 void CMainFrame::OnHelpHomepage()
 {
     ShellExecute(m_hWnd, _T("open"), WEBSITE_URL, nullptr, nullptr, SW_SHOWDEFAULT);
-}
-
-void CMainFrame::OnHelpCheckForUpdate()
-{
-    UpdateChecker::CheckForUpdate();
 }
 
 void CMainFrame::OnHelpToolbarImages()
@@ -25436,18 +25429,12 @@ void CMainFrame::MediaTransportControlSetMedia() {
             }
 
             if (!title.IsEmpty()) {
-                HSTRING ttitle;
-                if (WindowsCreateString(title.GetString(), title.GetLength(), &ttitle) == S_OK) {
-                    ret = pMusicDisplayProperties->put_Title(ttitle);
-                    ASSERT(ret == S_OK);
-                }
+                ret = SmtcPutString(pMusicDisplayProperties.p, &ABI::Windows::Media::IMusicDisplayProperties::put_Title, title);
+                ASSERT(ret == S_OK);
             }
             if (!author.IsEmpty()) {
-                HSTRING temp;
-                if (WindowsCreateString(author.GetString(), author.GetLength(), &temp) == S_OK) {
-                    ret = pMusicDisplayProperties->put_Artist(temp);
-                    ASSERT(ret == S_OK);
-                }
+                ret = SmtcPutString(pMusicDisplayProperties.p, &ABI::Windows::Media::IMusicDisplayProperties::put_Artist, author);
+                ASSERT(ret == S_OK);
             }
         } else {
             ret = m_media_trans_control.smtc_updater->put_Type(ABI::Windows::Media::MediaPlaybackType_Video);
@@ -25464,11 +25451,8 @@ void CMainFrame::MediaTransportControlSetMedia() {
             }
 
             if (!title.IsEmpty()) {
-                HSTRING ttitle;
-                if (WindowsCreateString(title.GetString(), title.GetLength(), &ttitle) == S_OK) {
-                    ret = pVideoDisplayProperties->put_Title(ttitle);
-                    ASSERT(ret == S_OK);
-                }
+                ret = SmtcPutString(pVideoDisplayProperties.p, &ABI::Windows::Media::IVideoDisplayProperties::put_Title, title);
+                ASSERT(ret == S_OK);
             }
             CString chapter;
             if (m_pCB) {
@@ -25487,20 +25471,14 @@ void CMainFrame::MediaTransportControlSetMedia() {
                 }
             }
             if (!chapter.IsEmpty() && chapter != title) {
-                HSTRING temp;
-                if (WindowsCreateString(chapter.GetString(), chapter.GetLength(), &temp) == S_OK) {
-                    ret = pVideoDisplayProperties->put_Subtitle(temp);
-                    ASSERT(ret == S_OK);
-                    have_secondary_title = true;
-                }
+                ret = SmtcPutString(pVideoDisplayProperties.p, &ABI::Windows::Media::IVideoDisplayProperties::put_Subtitle, chapter);
+                ASSERT(ret == S_OK);
+                have_secondary_title = SUCCEEDED(ret);
             }
             if (!have_secondary_title && !author.IsEmpty() && author != title) {
-                HSTRING temp;
-                if (WindowsCreateString(author.GetString(), author.GetLength(), &temp) == S_OK) {
-                    ret = pVideoDisplayProperties->put_Subtitle(temp);
-                    ASSERT(ret == S_OK);
-                    have_secondary_title = true;
-                }
+                ret = SmtcPutString(pVideoDisplayProperties.p, &ABI::Windows::Media::IVideoDisplayProperties::put_Subtitle, author);
+                ASSERT(ret == S_OK);
+                have_secondary_title = SUCCEEDED(ret);
             }                
         }
 

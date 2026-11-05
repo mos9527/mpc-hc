@@ -1389,7 +1389,6 @@ public:
     afx_msg void OnShowHistory();
 
     afx_msg void OnHelpHomepage();
-    afx_msg void OnHelpCheckForUpdate();
     afx_msg void OnHelpToolbarImages();
     afx_msg void OnHelpDonate();
 

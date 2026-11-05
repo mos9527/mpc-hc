@@ -28,7 +28,6 @@
 #include "ExceptionHandler.h"
 #include "PathUtils.h"
 #include "Translations.h"
-#include "UpdateChecker.h"
 #include "WinAPIUtils.h"
 #include "moreuuids.h"
 #include "mplayerc.h"
@@ -222,8 +221,6 @@ CAppSettings::CAppSettings()
     , iContrast(0)
     , iHue(0)
     , iSaturation(0)
-    , nUpdaterAutoCheck(-1)
-    , nUpdaterDelay(7)
     , eCaptionMenuMode(MODE_SHOWCAPTIONMENU)
     , fHideNavigation(false)
     , bHideCaptureSettings(false)
@@ -1341,8 +1338,6 @@ void CAppSettings::SaveSettings(bool write_full_history /* = false */)
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_HIGH_PRECISION_TIMER, bHighPrecisionTimer);
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_TIMER_SHOW_PERCENTAGE, bTimerShowPercentage);
 
-    pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_UPDATER_AUTO_CHECK, nUpdaterAutoCheck);
-    pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_UPDATER_DELAY, nUpdaterDelay);
 
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_JPEG_QUALITY, nJpegQuality);
 
@@ -2308,12 +2303,6 @@ void CAppSettings::LoadSettings()
     fRemainingTime = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_REMAINING_TIME, FALSE);
     bHighPrecisionTimer = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_HIGH_PRECISION_TIMER, FALSE);
     bTimerShowPercentage = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_TIMER_SHOW_PERCENTAGE, FALSE);
-
-    nUpdaterAutoCheck = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_UPDATER_AUTO_CHECK, AUTOUPDATE_UNKNOWN);
-    nUpdaterDelay = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_UPDATER_DELAY, 7);
-    if (nUpdaterDelay < 1) {
-        nUpdaterDelay = 1;
-    }
 
     nJpegQuality = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_JPEG_QUALITY, 90);
     if (nJpegQuality < 20 || nJpegQuality > 100) {
