@@ -411,6 +411,19 @@ private:
     void SetAlwaysOnTop(int iOnTop);
     bool WindowExpectedOnTop();
 
+    // Floating view preset: borderless and top-most, with the background blended into the desktop
+    // by extending the DWM frame over the whole client area. Pixels the views leave at alpha 0 show
+    // the desktop; CMouseWndWithArtView composes premultiplied alpha for the cover and the lyrics.
+    // Selecting the preset again cycles through the DWM backdrops shown behind instead.
+    enum class FloatingStyle { Transparent, Caption, Mica, Acrylic, Tabbed, Count };
+    bool m_bFloating = false;
+    FloatingStyle m_floatingStyle = FloatingStyle::Transparent;
+    bool m_bFloatingGlass = false; // the extended frame is currently applied
+    FloatingStyle m_floatingGlassStyle = FloatingStyle::Transparent; // ... with this background
+    void SetFloating(bool bFloating);
+    void UpdateFloatingFrame();
+    bool IsFloatingTransparent() const { return m_bFloatingGlass; }
+
     // dynamic menus
 
     void CreateDynamicMenus();
@@ -1198,6 +1211,10 @@ public:
     afx_msg void OnUpdateViewNormal(CCmdUI* pCmdUI);
     afx_msg void OnViewCustom();
     afx_msg void OnUpdateViewCustom(CCmdUI* pCmdUI);
+    afx_msg void OnViewFloating();
+    afx_msg void OnUpdateViewFloating(CCmdUI* pCmdUI);
+    afx_msg void OnViewCoverArt();
+    afx_msg void OnUpdateViewCoverArt(CCmdUI* pCmdUI);
     afx_msg void OnViewFullscreen();
     afx_msg void OnViewFullscreenSecondary();
     afx_msg void OnUpdateViewFullscreen(CCmdUI* pCmdUI);

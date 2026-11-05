@@ -20,10 +20,12 @@
 
 // Lyrics display modes in the Subtitles menu. For audio-only files that menu is
 // otherwise empty, so its item IDs are free for these entries.
+// Also the cover art toggle of the audio-only view (View menu).
 
 #include "stdafx.h"
 #include "mplayerc.h"
 #include "MainFrm.h"
+#include "FullscreenWnd.h"
 
 namespace
 {
@@ -40,6 +42,8 @@ namespace
         { LyricsMode::Line,  L"Lyrics as &Subtitles", L"Lyrics: as subtitles" },
         { LyricsMode::Off,   L"&Hide Lyrics",         L"Lyrics: hidden" },
     };
+    // after a separator, following the modes
+    constexpr int kLyricsOutlineItem = (int)_countof(kLyricsMenu);
 
     // the mode restored by the subtitle on/off toggle
     LyricsMode s_lastShownMode = LyricsMode::Panel;
@@ -60,10 +64,24 @@ void CMainFrame::SetupLyricsSubMenu(CMPCThemeMenu& subMenu)
         }
         VERIFY(subMenu.AppendMenu(flags, id++, item.label));
     }
+
+    VERIFY(subMenu.AppendMenu(MF_SEPARATOR));
+    UINT flags = MF_STRING | MF_ENABLED;
+    if (CMouseWndWithArtView::GetLyricsOutline()) {
+        flags |= MF_CHECKED;
+    }
+    VERIFY(subMenu.AppendMenu(flags, ID_SUBTITLES_SUBITEM_START + kLyricsOutlineItem, L"Lyrics &Outline"));
 }
 
 void CMainFrame::OnLyricsSubMenu(int i)
 {
+    if (i == kLyricsOutlineItem) {
+        const bool bOutline = !CMouseWndWithArtView::GetLyricsOutline();
+        CMouseWndWithArtView::SetLyricsOutline(bOutline);
+        m_wndView.Invalidate();
+        m_OSD.DisplayMessage(OSD_TOPLEFT, bOutline ? L"Lyrics outline: on" : L"Lyrics outline: off");
+        return;
+    }
     if (i < 0 || i >= (int)_countof(kLyricsMenu)) {
         return;
     }
@@ -96,4 +114,20 @@ bool CMainFrame::ToggleLyricsDisplay()
         }
     }
     return true;
+}
+
+void CMainFrame::OnViewCoverArt()
+{
+    const bool bShow = !CMouseWndWithArtView::GetShowCoverArt();
+    CMouseWndWithArtView::SetShowCoverArt(bShow);
+    m_wndView.Invalidate();
+    if (HasDedicatedFSVideoWindow()) {
+        m_pDedicatedFSVideoWnd->Invalidate();
+    }
+    m_OSD.DisplayMessage(OSD_TOPLEFT, bShow ? L"Cover art: shown" : L"Cover art: hidden");
+}
+
+void CMainFrame::OnUpdateViewCoverArt(CCmdUI* pCmdUI)
+{
+    pCmdUI->SetCheck(CMouseWndWithArtView::GetShowCoverArt());
 }

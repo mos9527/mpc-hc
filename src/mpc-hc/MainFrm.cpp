@@ -420,6 +420,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_UPDATE_COMMAND_UI(ID_VIEW_PRESETS_NORMAL, OnUpdateViewNormal)
     ON_COMMAND(ID_VIEW_PRESETS_CUSTOM, OnViewCustom)
     ON_UPDATE_COMMAND_UI(ID_VIEW_PRESETS_CUSTOM, OnUpdateViewCustom)
+    ON_COMMAND(ID_VIEW_PRESETS_FLOATING, OnViewFloating)
+    ON_UPDATE_COMMAND_UI(ID_VIEW_PRESETS_FLOATING, OnUpdateViewFloating)
+    ON_COMMAND(ID_VIEW_COVERART, OnViewCoverArt)
+    ON_UPDATE_COMMAND_UI(ID_VIEW_COVERART, OnUpdateViewCoverArt)
     ON_COMMAND(ID_VIEW_FULLSCREEN, OnViewFullscreen)
     ON_COMMAND(ID_VIEW_FULLSCREEN_SECONDARY, OnViewFullscreenSecondary)
     ON_UPDATE_COMMAND_UI(ID_VIEW_FULLSCREEN, OnUpdateViewFullscreen)
@@ -9136,6 +9140,7 @@ void CMainFrame::OnUpdateViewColorControls(CCmdUI* pCmdUI)
 void CMainFrame::OnViewMinimal()
 {
     m_nActiveViewPreset = ID_VIEW_PRESETS_MINIMAL;
+    SetFloating(false);
     SetCaptionState(MODE_BORDERLESS);
     m_controls.SetToolbarsSelection(CS_NONE, true);
 }
@@ -9147,6 +9152,7 @@ void CMainFrame::OnUpdateViewMinimal(CCmdUI* pCmdUI)
 void CMainFrame::OnViewCompact()
 {
     m_nActiveViewPreset = ID_VIEW_PRESETS_COMPACT;
+    SetFloating(false);
     SetCaptionState(MODE_FRAMEONLY);
     m_controls.SetToolbarsSelection(CS_SEEKBAR, true);
 }
@@ -9163,6 +9169,7 @@ UINT CMainFrame::GetNormalPresetCS() const
 void CMainFrame::OnViewNormal()
 {
     m_nActiveViewPreset = ID_VIEW_PRESETS_NORMAL;
+    SetFloating(false);
     SetCaptionState(MODE_SHOWCAPTIONMENU);
     m_controls.SetToolbarsSelection(GetNormalPresetCS(), true);
 }
@@ -9214,6 +9221,7 @@ void CMainFrame::OnUpdateViewNormal(CCmdUI* pCmdUI)
 void CMainFrame::OnViewCustom()
 {
     m_nActiveViewPreset = ID_VIEW_PRESETS_CUSTOM;
+    SetFloating(false);
     const CAppSettings& s = AfxGetAppSettings();
     SetCaptionState(static_cast<MpcCaptionState>(s.nCustomPresetCaption));
     m_controls.SetToolbarsSelection(s.nCustomPresetControlState, true);
@@ -9221,6 +9229,119 @@ void CMainFrame::OnViewCustom()
 
 void CMainFrame::OnUpdateViewCustom(CCmdUI* pCmdUI)
 {
+}
+
+void CMainFrame::OnViewFloating()
+{
+    if (m_bFloating) {
+        // already floating: next background
+        m_floatingStyle = FloatingStyle(((int)m_floatingStyle + 1) % (int)FloatingStyle::Count);
+        UpdateFloatingFrame();
+    } else {
+        m_nActiveViewPreset = ID_VIEW_PRESETS_FLOATING;
+        SetCaptionState(MODE_BORDERLESS);
+        m_controls.SetToolbarsSelection(CS_NONE, true);
+        m_floatingStyle = FloatingStyle::Transparent;
+        SetFloating(true);
+    }
+
+    static const LPCWSTR names[] = { L"transparent", L"caption", L"mica", L"acrylic", L"tabbed" };
+    static_assert(_countof(names) == (size_t)FloatingStyle::Count, "one name per floating style");
+    CStringW msg;
+    msg.Format(L"Floating: %s", names[(int)m_floatingStyle]);
+    m_OSD.DisplayMessage(OSD_TOPLEFT, msg);
+}
+
+void CMainFrame::OnUpdateViewFloating(CCmdUI* pCmdUI)
+{
+    pCmdUI->SetCheck(m_bFloating);
+}
+
+void CMainFrame::SetFloating(bool bFloating)
+{
+    if (m_bFloating == bFloating) {
+        return;
+    }
+    m_bFloating = bFloating;
+
+    // top-most while the preset is active, without changing the saved "On Top" setting
+    // (fullscreen manages the z-order itself and restores it through SetAlwaysOnTop)
+    if (!IsFullScreenMode()) {
+        if (bFloating) {
+            SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        } else if (!WindowExpectedOnTop()) {
+            SetWindowPos(&wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
+    }
+    UpdateFloatingFrame();
+}
+
+void CMainFrame::UpdateFloatingFrame()
+{
+    // not in fullscreen, where the black background must stay black
+    const bool bGlass = m_bFloating && !IsFullScreenMainFrame();
+    const FloatingStyle style = bGlass ? m_floatingStyle : FloatingStyle::Transparent;
+    if (bGlass == m_bFloatingGlass && style == m_floatingGlassStyle) {
+        return;
+    }
+    const bool bSeeThrough = bGlass && style == FloatingStyle::Transparent;
+    const bool bBackdrop = bGlass && !bSeeThrough;
+
+    // Negative margins turn the whole client area into DWM frame ("sheet of glass"): the window surface
+    // is composed with its own (premultiplied) alpha over whatever DWM draws for the frame there.
+    // Whatever is left at alpha 0, which includes plain GDI black, shows that frame background.
+    //
+    // With non-client rendering forced on (DWMNCRP_ENABLED, set in OnCreate for the fullscreen
+    // transitions) DWM fills that background, even for a frameless popup: with the caption colour,
+    // or the system backdrop chosen by DWMWA_SYSTEMBACKDROP_TYPE (Windows 11 22H2+; older versions
+    // ignore it and show the caption colour). With it disabled nothing is drawn there, so the desktop
+    // shows through.
+    // WS_POPUP: a frameless overlapped window loses its own opaque content over the glass instead.
+    // The menu bar is hidden by the borderless caption state, which popups allow.
+    const DWORD dwStyle = GetStyle();
+    const DWORD dwNewStyle = bGlass ? (dwStyle | WS_POPUP) : (dwStyle & ~WS_POPUP);
+    if (dwNewStyle != dwStyle) {
+        SetWindowLong(m_hWnd, GWL_STYLE, dwNewStyle);
+        SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+
+    const DWMNCRENDERINGPOLICY policy = bSeeThrough ? DWMNCRP_DISABLED : DWMNCRP_ENABLED;
+    ::DwmSetWindowAttribute(m_hWnd, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+
+    constexpr DWORD kDwmSystemBackdropType = 38;      // DWMWA_SYSTEMBACKDROP_TYPE
+    int backdrop = 0;                                 // DWMSBT_AUTO
+    switch (style) {
+        case FloatingStyle::Mica:
+            backdrop = 2;                             // DWMSBT_MAINWINDOW
+            break;
+        case FloatingStyle::Acrylic:
+            backdrop = 3;                             // DWMSBT_TRANSIENTWINDOW
+            break;
+        case FloatingStyle::Tabbed:
+            backdrop = 4;                             // DWMSBT_TABBEDWINDOW
+            break;
+        default:
+            break;
+    }
+    ::DwmSetWindowAttribute(m_hWnd, kDwmSystemBackdropType, &backdrop, sizeof(backdrop));
+
+    const int m = bGlass ? -1 : 0;
+    const MARGINS margins = { m, m, m, m };
+    const bool bApplied = SUCCEEDED(::DwmExtendFrameIntoClientArea(m_hWnd, &margins));
+    m_bFloatingGlass = bGlass && bApplied;
+    m_floatingGlassStyle = bApplied ? style : FloatingStyle::Transparent;
+
+    // Windows 11 outlines and rounds windows: neither belongs around a see-through one, while the
+    // backdrops look like a regular window, popup or not. Both attributes fail harmlessly
+    // on older versions.
+    constexpr DWORD kDwmBorderColor = 34;             // DWMWA_BORDER_COLOR
+    constexpr DWORD kDwmCornerPreference = 33;        // DWMWA_WINDOW_CORNER_PREFERENCE
+    const COLORREF border = bSeeThrough ? 0xFFFFFFFE : 0xFFFFFFFF; // DWMWA_COLOR_NONE : DWMWA_COLOR_DEFAULT
+    const int corner = bSeeThrough ? 1 : bBackdrop ? 2 : 0; // DWMWCP_DONOTROUND : DWMWCP_ROUND : DWMWCP_DEFAULT
+    ::DwmSetWindowAttribute(m_hWnd, kDwmBorderColor, &border, sizeof(border));
+    ::DwmSetWindowAttribute(m_hWnd, kDwmCornerPreference, &corner, sizeof(corner));
+
+    RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 }
 
 void CMainFrame::ApplyCustomPresetChange()
@@ -13430,7 +13551,7 @@ void CMainFrame::ToggleFullscreen(bool fToNearest, bool fSwitchScreenResWhenHasT
                 dwRemove |= WS_MINIMIZEBOX;
             }
 
-            m_bExtOnTop = !s.iOnTop && (GetExStyle() & WS_EX_TOPMOST);
+            m_bExtOnTop = !s.iOnTop && !m_bFloating && (GetExStyle() & WS_EX_TOPMOST);
             pInsertAfter = &wndTopMost;
 
             if (fToNearest) {
@@ -13527,6 +13648,9 @@ void CMainFrame::ToggleFullscreen(bool fToNearest, bool fSwitchScreenResWhenHasT
             OSDBarSetPos();
         }
     }
+
+    // a Floating window is opaque while fullscreen
+    UpdateFloatingFrame();
 
     if (m_fFullScreen) {
         m_eventc.FireEvent(MpcEvent::SWITCHED_TO_FULLSCREEN);
@@ -19411,7 +19535,10 @@ void CMainFrame::SetAlwaysOnTop(int iOnTop)
     if (!IsFullScreenMode()) {
         const CWnd* pInsertAfter = nullptr;
 
-        if (iOnTop == 0) {
+        if (m_bFloating) {
+            // the Floating preset keeps the window on top whatever the setting
+            pInsertAfter = &wndTopMost;
+        } else if (iOnTop == 0) {
             // We only want to disable "On Top" once so that
             // we don't interfere with other window manager
             if (s.iOnTop || !alwaysOnTopZOrderInitialized) {
@@ -19435,7 +19562,8 @@ void CMainFrame::SetAlwaysOnTop(int iOnTop)
 }
 
 bool CMainFrame::WindowExpectedOnTop() {
-    return (AfxGetAppSettings().iOnTop == 1 ||
+    return (m_bFloating ||
+        AfxGetAppSettings().iOnTop == 1 ||
         (AfxGetAppSettings().iOnTop == 2 && GetMediaState() == State_Running) ||
         (AfxGetAppSettings().iOnTop == 3 && GetMediaState() == State_Running && !m_fAudioOnly));
 }

@@ -657,6 +657,8 @@ static constexpr wmcmd_base default_wmcmds[] = {
     { ID_VIEW_PRESETS_COMPACT,            '2', 0,                 IDS_AG_VIEW_COMPACT },
     { ID_VIEW_PRESETS_NORMAL,             '3', 0,                 IDS_AG_VIEW_NORMAL },
     { ID_VIEW_PRESETS_CUSTOM,             '4', 0,                 IDS_AG_VIEW_CUSTOM },
+    { ID_VIEW_PRESETS_FLOATING,           '5', 0,                 IDS_AG_VIEW_FLOATING },
+    { ID_VIEW_COVERART,                     0, 0,                 IDS_AG_TOGGLE_COVERART },
     { ID_VIEW_FULLSCREEN,           VK_RETURN, FALT,              IDS_AG_FULLSCREEN, 0, wmcmd::LDBLCLK },
     { ID_VIEW_FULLSCREEN_SECONDARY,    VK_F11, 0,                 IDS_MPLAYERC_39 },
     { ID_VIEW_ZOOM_25,               VK_OEM_3, FALT,              IDS_AG_ZOOM_25 }, /* VK_OEM_3 is `~ on US keyboards*/
