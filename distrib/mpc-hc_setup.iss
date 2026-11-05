@@ -116,7 +116,7 @@
   #define FullAppNameVer = FullAppNameVer + " " + "(64-bit)"
 #endif
 
-#ifexist "..\distrib\mpcvr\MpcVideoRenderer.ax"
+#ifexist "..\distrib\mpcvr\" + mpcvr_ax
 #define INCLUDE_MPCVR = true
 #else
 #define INCLUDE_MPCVR = false

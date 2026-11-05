@@ -89,6 +89,17 @@ jobs:
       - name: Build mpciconlib
         run: msbuild mpciconlib.sln -p:Configuration=Release -p:Platform=x64 -m -nologo -v:minimal
 
+      - name: Install polib
+        run: python -m pip install --disable-pip-version-check polib==1.2.0
+
+      - name: Generate translations
+        run: python ci/translations.py
+
+      # Only BuildAll: the solution's SyncTranslations project would repeat the step
+      # above, and nothing orders it before the compilation (see ci/translations.py)
+      - name: Build translations
+        run: msbuild mpcresources.sln -t:BuildAll -p:Configuration=Release -p:Platform=x64 -m -nologo -v:minimal
+
       - name: Package
         id: package
         run: python ci/package.py --out dist/pkg --pdb-out dist/pdb --github-output
@@ -104,3 +115,18 @@ jobs:
           name: ${{ steps.package.outputs.name }}.pdb
           path: dist/pdb
           if-no-files-found: warn
+
+      # Last, so that a failure here still leaves the package and its symbols. Inno Setup
+      # comes with the image. Pull requests skip this: their pushes already build it when
+      # the branch is in this repository, and the package covers the rest.
+      - name: Build installer
+        if: github.event_name != 'pull_request'
+        run: python ci/installer.py --out dist/installer
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: ${{ steps.package.outputs.name }}.setup
+          path: dist/installer
+          if-no-files-found: error
+          compression-level: 0

@@ -59,8 +59,14 @@ if __name__ == '__main__':
 
     pool.close()
 
+    failed = False
     for result in results:
         ret = result.get(15)
         print(ret[1])
         if (not ret[0]):
-            os.system('pause')
+            failed = True
+            if not os.environ.get('CI'):
+                os.system('pause')
+
+    if failed:
+        sys.exit(1)

@@ -35,6 +35,21 @@ def die(msg):
     sys.exit(1)
 
 
+def lang_dlls():
+    """The translation DLLs the build must produce: one per language in PO, see ci/translations.py."""
+    po = ROOT / "src" / "mpc-hc" / "mpcresources" / "PO"
+    return sorted(f"Lang/mpcresources.{f.name.split('.')[1]}.dll" for f in po.glob("mpc-hc.*.menus.po"))
+
+
+def required_files():
+    """Everything the build must have put in BIN_DIR; exits naming whatever is missing."""
+    required = REQUIRED + lang_dlls()
+    missing = [f for f in required if not (BIN_DIR / f).is_file()]
+    if missing:
+        die(f"missing from {BIN_DIR}: {', '.join(missing)}")
+    return required
+
+
 def defines(path):
     if not path.is_file():
         return {}
@@ -68,16 +83,14 @@ def main():
     ap.add_argument("--github-output", action="store_true", help="write name=<name> to $GITHUB_OUTPUT")
     args = ap.parse_args()
 
-    missing = [f for f in REQUIRED if not (BIN_DIR / f).is_file()]
-    if missing:
-        die(f"missing from {BIN_DIR}: {', '.join(missing)}")
+    required = required_files()
 
     name = package_name()
     out = Path(args.out) if args.out else ROOT / "bin" / "ci" / name
     if out.exists():
         shutil.rmtree(out)
 
-    for f in [f for f in REQUIRED if not f.startswith(LAV_OUT + "/")] + [f for f in OPTIONAL if (BIN_DIR / f).is_file()]:
+    for f in [f for f in required if not f.startswith(LAV_OUT + "/")] + [f for f in OPTIONAL if (BIN_DIR / f).is_file()]:
         copy(BIN_DIR / f, out / f)
     for pattern in ("*.ax", "*.dll", "*.manifest"):
         for f in (BIN_DIR / LAV_OUT).glob(pattern):
