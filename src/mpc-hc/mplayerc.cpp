@@ -179,7 +179,7 @@ bool LoadType(CString fn, CString& type)
             ULONG len;
 
             CString tmp = _T("");
-            CString mplayerc_ext = _T("mplayerc") + ext;
+            CString mplayerc_ext = MPC_PROGID + ext;
 
             if (ERROR_SUCCESS == key.Open(HKEY_CLASSES_ROOT, mplayerc_ext)) {
                 tmp = mplayerc_ext;
@@ -876,8 +876,8 @@ bool CMPlayerCApp::IsUsingRegistry() const
 
 void CMPlayerCApp::SetupSettingsStore()
 {
-    // The store stays at its historical location (HKCU\Software\MPC-HC\MPC-HC or
-    // <exe>.ini) so external tools and older builds keep reading it unchanged.
+    // The store is HKCU\Software\MPC-HC Custom\MPC-HC Custom or <exe>.ini, apart
+    // from the official build's (see MPC_REG_SETTINGS_KEY in mpc-hc_config.h).
     // Scalar settings evolve additively; the one format-fragile composite field
     // (saved DVB channels) moved to a replacement section (DVBConfiguration2)
     // at its own call sites, so no store-wide format/migration machinery is
@@ -1008,11 +1008,11 @@ void CMPlayerCApp::ImportHKLMTree(HKEY hKey, const CStringW& section)
 void CMPlayerCApp::ApplyHKLMDefaults()
 {
     HKEY hRoot;
-    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, _T("Software\\MPC-HC"), 0, KEY_READ, &hRoot) != ERROR_SUCCESS) {
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, MPC_REG_ROOT, 0, KEY_READ, &hRoot) != ERROR_SUCCESS) {
         return; // no machine-wide defaults configured
     }
 
-    // Control values live at the root of HKLM\Software\MPC-HC.
+    // Control values live at the root of HKLM\Software\MPC-HC Custom.
     DWORD type = 0, cb;
     DWORD reset = 0;
     cb = sizeof(reset);
@@ -1155,10 +1155,82 @@ bool CMPlayerCApp::GetAppDataPath(CString& path)
         return false;
     }
     CLongPath p;
-    p.Combine(path, _T("MPC-HC"));
+    p.Combine(path, MPC_APPDATA_DIR);
     path = (LPCTSTR)p;
 
     return true;
+}
+
+// Copies the files of srcDir into dstDir, recursing into subfolders, without
+// overwriting anything. Shader caches and logs are rebuilt on demand, so they
+// are left behind.
+static void CopyAppDataTree(const CString& srcDir, const CString& dstDir)
+{
+    if (!PathUtils::IsDir(dstDir) && !PathUtils::CreateDirRecursive(dstDir)) {
+        return;
+    }
+
+    WIN32_FIND_DATA fd;
+    HANDLE hFind = FindFirstFile(PathUtils::CombinePaths(srcDir, _T("*")), &fd);
+    if (hFind == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    do {
+        const CString name(fd.cFileName);
+        if (name == _T(".") || name == _T("..") || (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+            continue;
+        }
+        const CString src = PathUtils::CombinePaths(srcDir, name);
+        const CString dst = PathUtils::CombinePaths(dstDir, name);
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            if (name.CompareNoCase(IDS_R_SHADER_CACHE) != 0) {
+                CopyAppDataTree(src, dst);
+            }
+        } else if (PathUtils::FileExt(name).CompareNoCase(_T(".log")) != 0) {
+            CopyFile(src, dst, TRUE);
+        }
+    } while (FindNextFile(hFind, &fd));
+    FindClose(hFind);
+}
+
+void CMPlayerCApp::MigrateOfficialAppData()
+{
+    CString dataDir;
+    if (!GetAppDataPath(dataDir) || PathUtils::Exists(dataDir)) {
+        return; // ours exists already: migrated before, or created by this build
+    }
+
+    CString roaming;
+    HRESULT hr = SHGetFolderPath(nullptr, CSIDL_APPDATA, nullptr, 0, roaming.GetBuffer(MAX_PATH));
+    roaming.ReleaseBuffer();
+    if (FAILED(hr)) {
+        return;
+    }
+    const CString officialDir = PathUtils::CombinePaths(roaming, MPC_APPDATA_DIR_OFFICIAL);
+    if (PathUtils::IsDir(officialDir)) {
+        CopyAppDataTree(officialDir, dataDir);
+    }
+}
+
+void CMPlayerCApp::MigrateOfficialRegistrySettings()
+{
+    CRegKey key;
+    if (ERROR_SUCCESS != key.Create(HKEY_CURRENT_USER, MPC_REG_SETTINGS_KEY)) {
+        return;
+    }
+
+    // ExePath is written on every launch in registry mode, so its absence marks the first one
+    if (RegQueryValueEx(key, _T("ExePath"), 0, nullptr, nullptr, nullptr) != ERROR_SUCCESS) {
+        // Start from the official build's settings (which builds of this fork used before
+        // it got its own key), or failing that from the pre-MPC-HC location they came from
+        CRegKey oldKey;
+        if (ERROR_SUCCESS == oldKey.Open(HKEY_CURRENT_USER, MPC_REG_SETTINGS_KEY_OFFICIAL, KEY_READ)
+                || ERROR_SUCCESS == oldKey.Open(HKEY_CURRENT_USER, _T("Software\\Gabest\\Media Player Classic"), KEY_READ)) {
+            SHCopyKey(oldKey, _T(""), key, 0);
+        }
+    }
+
+    key.SetStringValue(_T("ExePath"), PathUtils::GetProgramPath(true));
 }
 
 bool CMPlayerCApp::ChangeSettingsLocation(bool useIni)
@@ -2077,7 +2149,7 @@ BOOL CMPlayerCApp::InitInstance()
     // At this point we have not hooked this function yet so we get the real result
     if (!IsDebuggerPresent()) {
 #if !defined(_DEBUG) && USE_DRDUMP_CRASH_REPORTER
-        if (RegQueryBoolValue(HKEY_CURRENT_USER, _T("Software\\MPC-HC\\MPC-HC\\Settings"), _T("EnableCrashReporter"), true)) {
+        if (RegQueryBoolValue(HKEY_CURRENT_USER, MPC_REG_SETTINGS_KEY _T("\\Settings"), _T("EnableCrashReporter"), true)) {
             CrashReporter::Enable();
             if (!CrashReporter::IsEnabled()) {
                 MPCExceptionHandler::Enable();
@@ -2170,6 +2242,10 @@ BOOL CMPlayerCApp::InitInstance()
     }
 
     PreProcessCommandLine();
+
+    // Before the store is set up: in portable mode that may already create our data
+    // folder for the AppData history file, which would then look migrated.
+    MigrateOfficialAppData();
 
     // The settings store auto-detects its location (portable INI or registry) on
     // construction. In portable mode this splits MediaHistory into its own file.
@@ -2356,18 +2432,7 @@ BOOL CMPlayerCApp::InitInstance()
     }
 
     if (!IsIniValid()) {
-        CRegKey key;
-        if (ERROR_SUCCESS == key.Create(HKEY_CURRENT_USER, _T("Software\\MPC-HC\\MPC-HC"))) {
-            if (RegQueryValueEx(key, _T("ExePath"), 0, nullptr, nullptr, nullptr) != ERROR_SUCCESS) { // First launch
-                // Move registry settings from the old to the new location
-                CRegKey oldKey;
-                if (ERROR_SUCCESS == oldKey.Open(HKEY_CURRENT_USER, _T("Software\\Gabest\\Media Player Classic"), KEY_READ)) {
-                    SHCopyKey(oldKey, _T(""), key, 0);
-                }
-            }
-
-            key.SetStringValue(_T("ExePath"), PathUtils::GetProgramPath(true));
-        }
+        MigrateOfficialRegistrySettings();
     }
 
     // Now that a normal interactive launch is committed (utility switches and
@@ -2394,7 +2459,7 @@ BOOL CMPlayerCApp::InitInstance()
     m_AudioRendererDisplayName_CL = _T("");
 
     if (!__super::InitInstance()) {
-        MessageBoxW(nullptr, L"MPC-HC encountered a problem during initialization", L"MPC-HC", MB_ICONERROR | MB_OK);
+        MessageBoxW(nullptr, MPC_APP_NAME L" encountered a problem during initialization", MPC_APP_NAME, MB_ICONERROR | MB_OK);
         return FALSE;
     }
 
@@ -2404,24 +2469,24 @@ BOOL CMPlayerCApp::InitInstance()
     try {
         pFrame = DEBUG_NEW CMainFrame;
         if (!pFrame || !pFrame->LoadFrame(IDR_MAINFRAME, WS_OVERLAPPEDWINDOW | FWS_ADDTOTITLE, nullptr, nullptr)) {
-            MessageBoxW(nullptr, L"MPC-HC encountered a problem during initialization", L"MPC-HC", MB_ICONERROR | MB_OK);
+            MessageBoxW(nullptr, MPC_APP_NAME L" encountered a problem during initialization", MPC_APP_NAME, MB_ICONERROR | MB_OK);
             return FALSE;
         }
     } catch (...) {
-        MessageBoxW(nullptr, L"MPC-HC encountered a problem during initialization", L"MPC-HC", MB_ICONERROR | MB_OK);
+        MessageBoxW(nullptr, MPC_APP_NAME L" encountered a problem during initialization", MPC_APP_NAME, MB_ICONERROR | MB_OK);
         return FALSE;
     }
 
     m_pMainWnd = pFrame;
     if (!m_pMainWnd) {
-        MessageBoxW(nullptr, L"MPC-HC encountered a problem during initialization", L"MPC-HC", MB_ICONERROR | MB_OK);
+        MessageBoxW(nullptr, MPC_APP_NAME L" encountered a problem during initialization", MPC_APP_NAME, MB_ICONERROR | MB_OK);
         return FALSE;
     }
 
     try {
         pFrame->m_controls.LoadState();
     } catch (...) {
-        MessageBoxW(nullptr, L"MPC-HC encountered a problem during initialization of its control bars", L"MPC-HC", MB_ICONERROR | MB_OK);
+        MessageBoxW(nullptr, MPC_APP_NAME L" encountered a problem during initialization of its control bars", MPC_APP_NAME, MB_ICONERROR | MB_OK);
         return FALSE;
     }
 

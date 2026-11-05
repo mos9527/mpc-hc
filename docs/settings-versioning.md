@@ -22,7 +22,7 @@ unchanged**:
 
 | | Location |
 |---|---|
-| Registry (installed) | `HKCU\Software\MPC-HC\MPC-HC` |
+| Registry (installed) | `HKCU\Software\MPC-HC Custom\MPC-HC Custom` (its own, not the official build's `HKCU\Software\MPC-HC\MPC-HC`, which is imported once on the first launch) |
 | Portable INI | `<exe-basename>.ini` next to the executable |
 
 `CProfile` replaces the old hand-rolled profile code in `CMPlayerCApp`, but it is
@@ -144,7 +144,7 @@ tied to any format version.
 
 ## Key identifiers (quick reference)
 
-- Store: `HKCU\Software\MPC-HC\MPC-HC` / `<exe>.ini` (unchanged location, A-P binary)
+- Store: `HKCU\Software\MPC-HC Custom\MPC-HC Custom` / `<exe>.ini` (A-P binary)
 - `CProfile` — the store engine; `AfxGetProfile()` reaches the app's instance
 - `IDS_R_DVB2` = `DVBConfiguration2` (`SettingsDefines.h`) — downgrade-protected replacement section for the DVB settings (`BDASymbolRate` probe with default `-1` detects first run after upgrade)
 - `[Version] HistorySplit = 1` — MediaHistory split-done marker

@@ -26,12 +26,13 @@
 #include "base64/base64.h"
 
 // ---------------------------------------------------------------------------
-// Store location. MPC-HC keeps its historical settings location so external
-// tools (e.g. madVR) and older builds keep reading it: the HKCU registry key
-// below, or <exe-basename>.ini next to the executable in portable mode. Only
+// Store location: the HKCU registry key below, which is this fork's own so it
+// does not share settings with an official MPC-HC install (the official key is
+// imported once, see CMPlayerCApp::MigrateOfficialRegistrySettings), or
+// <exe-basename>.ini next to the executable in portable mode. Only
 // MediaHistory is relocated, into <exe-basename>.history.ini (portable mode).
 // ---------------------------------------------------------------------------
-static const wchar_t* const REG_KEY            = L"Software\\MPC-HC\\MPC-HC"; // HKCU settings key
+static const wchar_t* const REG_KEY            = MPC_REG_SETTINGS_KEY;        // HKCU settings key
 static const wchar_t* const INI_SUFFIX         = L".ini";                     // <exe-basename>.ini (portable)
 static const wchar_t* const HISTORY_INI_SUFFIX = L".history.ini";            // <exe-basename>.history.ini
 

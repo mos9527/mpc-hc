@@ -31,6 +31,30 @@
 #endif
 #endif
 
+#ifndef ISPP_INVOKED
+// Identity of this fork. Every name below differs from the official MPC-HC build so
+// both can be installed and used side by side: settings, data folder, machine-wide
+// defaults, file association ProgIDs, the single-instance window class and mutex.
+// distrib\mpc-hc_setup.iss carries the installer's copy of these values (ISPP cannot
+// evaluate these string literals), keep the two in sync.
+#define MPC_APP_NAME                _T("MPC-HC Custom")
+// HKLM, machine-wide default settings pushed by administrators
+#define MPC_REG_ROOT                _T("Software\\MPC-HC Custom")
+// HKCU, the settings store in registry mode
+#define MPC_REG_SETTINGS_KEY        _T("Software\\MPC-HC Custom\\MPC-HC Custom")
+// Subfolder of %APPDATA%
+#define MPC_APPDATA_DIR             _T("MPC-HC Custom")
+// Prefix of the per-extension ProgIDs ("<prefix>.mkv") and of the folder verbs
+#ifdef _WIN64
+#define MPC_PROGID                  _T("mplayerccustom64")
+#else
+#define MPC_PROGID                  _T("mplayerccustom")
+#endif
+// The official build's locations, only ever read: imported once, on the first launch
+#define MPC_REG_SETTINGS_KEY_OFFICIAL _T("Software\\MPC-HC\\MPC-HC")
+#define MPC_APPDATA_DIR_OFFICIAL    _T("MPC-HC")
+#endif // ISPP_INVOKED
+
 #define WEBSITE_URL  _T("https://github.com/clsid2/mpc-hc/releases")
 #define DOWNLOAD_URL _T("https://github.com/clsid2/mpc-hc/releases")
 #define TRAC_URL     _T("https://github.com/clsid2/mpc-hc/issues")

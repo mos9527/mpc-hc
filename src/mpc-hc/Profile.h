@@ -22,7 +22,7 @@
 // (src/DSUtil/Profile.{h,cpp}). It replaces the old inline profile code in
 // CMPlayerCApp but keeps the SAME on-disk location and format, so external
 // tools and older builds keep reading the settings unchanged:
-//   - Registry  : HKCU\Software\MPC-HC\MPC-HC
+//   - Registry  : HKCU\Software\MPC-HC Custom\MPC-HC Custom (MPC_REG_SETTINGS_KEY)
 //   - Portable  : <exe-basename>.ini next to the executable
 // Binary values use the legacy A-P encoding for byte compatibility. The only
 // relocation is MediaHistory, which moves to <exe-basename>.history.ini in
@@ -145,7 +145,7 @@ public:
 
     SettingsLocation GetSettingsLocation() const;
 
-    // Registry path ("Software\\MPC-HC\\...") of the store when in registry
+    // Registry path (MPC_REG_SETTINGS_KEY) of the store when in registry
     // mode, empty otherwise. Used by settings export.
     CStringW GetRegistryKeyPath() const;
 

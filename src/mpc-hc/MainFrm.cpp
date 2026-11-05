@@ -1633,7 +1633,7 @@ void CMainFrame::ShowTrayIcon(bool bShow)
             nid.uVersion = NOTIFYICON_VERSION_4;
             nid.hIcon = (HICON)LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_MAINFRAME),
                                          IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
-            StringCchCopy(nid.szTip, _countof(nid.szTip), _T("MPC-HC"));
+            StringCchCopy(nid.szTip, _countof(nid.szTip), MPC_APP_NAME);
             if (Shell_NotifyIcon(NIM_ADD, &nid) && Shell_NotifyIcon(NIM_SETVERSION, &nid)) {
                 m_bTrayIcon = true;
             }
@@ -7139,7 +7139,7 @@ bool CMainFrame::SaveThumbnails(LPCTSTR fn)
         rts.AddStyle(_T("thumbs"), style);
 
         CStringW str;
-        str.Format(L"{\\an9\\fs%d\\b1\\bord0\\shad0\\1c&Hffffff&}%s", infoheight - 2 * margin, L"MPC-HC");
+        str.Format(L"{\\an9\\fs%d\\b1\\bord0\\shad0\\1c&Hffffff&}%s", infoheight - 2 * margin, MPC_APP_NAME);
         if (darktheme) {
             str.Replace(L"\\1c&Hffffff", L"\\1c&Hc8c8c8");
         }

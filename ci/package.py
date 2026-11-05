@@ -4,7 +4,7 @@
   python ci/package.py [--out DIR] [--pdb-out DIR] [--github-output]
 
 Without --out, the package goes to bin/ci/<name>, where <name> is
-MPC-HC.<major>.<minor>.<patch>.<rev>-<hash>.x64 taken from the version headers
+MPC-HC-Custom.<major>.<minor>.<patch>.<rev>-<hash>.x64 taken from the version headers
 that update_version.bat writes. --github-output also exports that name as the
 'name' output of the current GitHub Actions step.
 """
@@ -68,7 +68,7 @@ def package_name():
     m = re.search(r'"(\w+)"', rev.get("MPCHC_HASH", ""))
     if m:
         ver += "-" + m.group(1)
-    return f"MPC-HC.{ver}.x64"
+    return f"MPC-HC-Custom.{ver}.x64"  # app_file_name in distrib/mpc-hc_setup.iss
 
 
 def copy(src, dst):

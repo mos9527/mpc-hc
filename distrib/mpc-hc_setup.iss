@@ -51,7 +51,15 @@
 #include "..\include\version.h"
 
 #define copyright_str   str(MPC_COPYRIGHT_STR)
-#define app_name        "MPC-HC"
+; This fork installs next to an official MPC-HC: the name, AppId, folders, mutex and every
+; settings location below differ from the official installer's. The player itself uses
+; the same values, see the fork identity block in include\mpc-hc_config.h.
+#define app_name        "MPC-HC Custom"
+; app_name without spaces, for file names
+#define app_file_name   "MPC-HC-Custom"
+#define settings_key    "Software\MPC-HC Custom\MPC-HC Custom"
+#define settings_root   "Software\MPC-HC Custom"
+#define appdata_dir     "MPC-HC Custom"
 
 #if MPC_NIGHTLY_RELEASE
   #define app_ver       str(MPC_VERSION_MAJOR) + "." + str(MPC_VERSION_MINOR) + "." + str(MPC_VERSION_PATCH) + "." + str(MPC_VERSION_REV)
@@ -69,7 +77,7 @@
   #define mpchc_exe     = "mpc-hc64.exe"
   #define mpchc_ini     = "mpc-hc64.ini"
   #define lavfiltersdir = "LAVFilters64"
-  #define OutFilename   = app_name + "." + app_ver + ".x64"
+  #define OutFilename   = app_file_name + "." + app_ver + ".x64"
   #define platform      = "x64"
   #define mpcvr_ax      = "MpcVideoRenderer64.ax"
   #define mediainfo_dll = "..\distrib\x64\MediaInfo.dll"
@@ -78,7 +86,7 @@
   #define mpchc_exe     = "mpc-hc.exe"
   #define mpchc_ini     = "mpc-hc.ini"
   #define lavfiltersdir = "LAVFilters"
-  #define OutFilename   = app_name + "." + app_ver + ".x86"
+  #define OutFilename   = app_file_name + "." + app_ver + ".x86"
   #define platform      = "x86"
   #define mpcvr_ax      = "MpcVideoRenderer.ax"
   #define mediainfo_dll = "..\distrib\x86\MediaInfo.dll"
@@ -134,13 +142,15 @@
 
 
 [Setup]
+; Not the official installer's AppIds ({2ACBF1FA-...} x64, {2624B969-...} x86): with those,
+; Setup would take an official install for an earlier version of this one and replace it
 #ifdef x64Build
-AppId                     = {{2ACBF1FA-F5C3-4B19-A774-B22A31F231B9}
+AppId                     = {{7631518D-8FAC-4A45-BD0C-FD619D49AEE1}
 DefaultGroupName          = {#app_name} x64
 ArchitecturesAllowed      = x64compatible
 ArchitecturesInstallIn64BitMode = x64compatible
 #else
-AppId                     = {{2624B969-7135-4EB1-B0F6-2D8C397B45F7}
+AppId                     = {{4282813B-86B5-4F6F-911E-2CEF2FC61810}
 DefaultGroupName          = {#app_name}
 #endif
 
@@ -172,7 +182,7 @@ CloseApplications         = true
 #ifexist "..\signinfo.txt"
 SignTool                  = MySignTool
 #endif
-SetupMutex                = 'mpchc_setup_mutex'
+SetupMutex                = 'mpchccustom_setup_mutex'
 
 [Languages]
 Name: en;    MessagesFile: compiler:Default.isl
@@ -307,24 +317,8 @@ Type: files; Name: {app}\COPYING;                   Check: IsUpgrade()
 Type: filesandordirs; Name: {app}\CrashReporter;    Check: IsUpgrade()
 	#endif
 
-; old shortcuts
-#ifdef x64Build
-Type: files; Name: {group}\Media Player Classic - Home Cinema x64.lnk;                   Check: IsUpgrade()
-Type: files; Name: {commondesktop}\Media Player Classic - Home Cinema x64.lnk;           Check: IsUpgrade()
-Type: files; Name: {userdesktop}\Media Player Classic - Home Cinema x64.lnk;             Check: IsUpgrade()
-Type: files; Name: {#quick_launch}\Media Player Classic - Home Cinema x64.lnk;           Check: IsUpgrade()
-#else
-Type: files; Name: {group}\Media Player Classic - Home Cinema.lnk;                       Check: IsUpgrade()
-Type: files; Name: {commondesktop}\Media Player Classic - Home Cinema.lnk;               Check: IsUpgrade()
-Type: files; Name: {userdesktop}\Media Player Classic - Home Cinema.lnk;                 Check: IsUpgrade()
-Type: files; Name: {#quick_launch}\Media Player Classic - Home Cinema.lnk;               Check: IsUpgrade()
-#endif
-Type: files; Name: {group}\{cm:ProgramOnTheWeb,Media Player Classic - Home Cinema}.url;  Check: IsUpgrade()
-Type: files; Name: {group}\{cm:UninstallProgram,Media Player Classic - Home Cinema}.lnk; Check: IsUpgrade()
-
-Type: files; Name: {userdesktop}\Media Player Classic - Home Cinema.lnk;   Check: not IsTaskSelected('desktopicon\user')   and IsUpgrade()
-Type: files; Name: {commondesktop}\Media Player Classic - Home Cinema.lnk; Check: not IsTaskSelected('desktopicon\common') and IsUpgrade()
-Type: files; Name: {#quick_launch}\Media Player Classic - Home Cinema.lnk; Check: not IsTaskSelected('quicklaunchicon')    and IsUpgrade(); OnlyBelowVersion: 6.01
+; The official installer also deletes the shortcuts of pre-1.7 "Media Player Classic - Home
+; Cinema" installs here. This one does not: they belong to the official build, never to this one.
 
 ; Old ffmpeg dlls from LAV Filters
 Type: files; Name: {app}\{#lavfiltersdir}\avcodec-lav-62.dll;   Check: IsUpgrade()
@@ -423,17 +417,12 @@ function GetInstallFolder(Default: String): String;
 var
   sInstallPath: String;
 begin
-  if not RegQueryStringValue(HKCU, 'SOFTWARE\Gabest\Media Player Classic', 'ExePath', sInstallPath)
-  or not RegQueryStringValue(HKCU, 'SOFTWARE\MPC-HC\MPC-HC', 'ExePath', sInstallPath) then begin
-    Result := ExpandConstant('{pf}\MPC-HC');
-  end
-  else begin
-    RegQueryStringValue(HKCU, 'SOFTWARE\MPC-HC\MPC-HC', 'ExePath', sInstallPath);
+  // Only this build's own key: the official build's ExePath points at the official install
+  Result := '';
+  if RegQueryStringValue(HKCU, '{#settings_key}', 'ExePath', sInstallPath) then
     Result := ExtractFileDir(sInstallPath);
-    if (Result = '') or not DirExists(Result) then begin
-      Result := ExpandConstant('{pf}\MPC-HC');
-    end;
-  end;
+  if (Result = '') or not DirExists(Result) then
+    Result := ExpandConstant('{pf}\{#app_name}');
 end;
 
 function Is_SSE2_Supported(): Boolean;
@@ -451,11 +440,11 @@ begin
 end;
 
 
-// Check if MPC-HC's settings exist
+// Check if this build's settings exist. The official build's (Software\MPC-HC\MPC-HC,
+// %APPDATA%\MPC-HC) and the pre-MPC-HC ones (Software\Gabest) are not ours to reset or delete.
 function SettingsExist(): Boolean;
 begin
-  if RegKeyExists(HKEY_CURRENT_USER, 'Software\Gabest\Media Player Classic') or
-  RegKeyExists(HKEY_CURRENT_USER, 'Software\MPC-HC\MPC-HC') or
+  if RegKeyExists(HKEY_CURRENT_USER, '{#settings_key}') or
   FileExists(ExpandConstant('{app}\{#mpchc_ini}')) then
     Result := True
   else
@@ -476,34 +465,18 @@ var
   ResultCode: Integer;
 begin
   try
+    // Removes this build's file associations only, see FileAssoc.cpp
     Exec(ExpandConstant('{app}\{#mpchc_exe}'), '/unregall', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   except
   end;
   DeleteFile(ExpandConstant('{app}\{#mpchc_ini}'));
-  DelTree(ExpandConstant('{userappdata}\MPC-HC\ShaderCache'), True, True, True);  
-  DeleteFile(ExpandConstant('{userappdata}\MPC-HC\default.mpcpl'));
-  RemoveDir(ExpandConstant('{userappdata}\MPC-HC'));
-  RegDeleteKeyIncludingSubkeys(HKCU, 'Software\MPC-HC\Filters');
-  RegDeleteKeyIncludingSubkeys(HKCU, 'Software\MPC-HC\MPC-HC');
-  RegDeleteKeyIfEmpty(HKCU, 'Software\MPC-HC');
-
-  #if INCLUDE_MPCVR
-  RegDeleteKeyIncludingSubkeys(HKCU, 'Software\MPC-BE Filters\MPC Video Renderer');
-  RegDeleteKeyIfEmpty(HKCU, 'Software\MPC-BE Filters');  
-  #endif
-end;
-
-
-procedure CleanUpOldSettingsAndFiles();
-begin
-  DeleteFile(ExpandConstant('{userappdata}\Media Player Classic\default.mpcpl'));
-  RemoveDir(ExpandConstant('{userappdata}\Media Player Classic'));
-  RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Gabest\Filters');
-  RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Gabest\Media Player Classic');
-  RegDeleteKeyIfEmpty(HKCU, 'Software\Gabest');
-  RegDeleteValue(HKLM, 'SOFTWARE\Gabest\Media Player Classic', 'ExePath')
-  RegDeleteKeyIfEmpty(HKLM, 'SOFTWARE\Gabest\Media Player Classic');
-  RegDeleteKeyIfEmpty(HKLM, 'SOFTWARE\Gabest');
+  DelTree(ExpandConstant('{userappdata}\{#appdata_dir}\ShaderCache'), True, True, True);
+  DeleteFile(ExpandConstant('{userappdata}\{#appdata_dir}\default.mpcpl'));
+  RemoveDir(ExpandConstant('{userappdata}\{#appdata_dir}'));
+  RegDeleteKeyIncludingSubkeys(HKCU, '{#settings_key}');
+  RegDeleteKeyIfEmpty(HKCU, '{#settings_root}');
+  // HKCU\Software\MPC-BE Filters\MPC Video Renderer is left alone, unlike in the official
+  // installer: MPCVR keeps one set of settings for every player that uses it.
 end;
 
 
@@ -520,7 +493,7 @@ begin
   if CurStep = ssPostInstall then begin
     if IsTaskSelected('reset_settings') then begin
       CleanUpSettingsAndFiles();
-      RegWriteStringValue(HKCU, 'Software\MPC-HC\MPC-HC', 'ExePath', ExpandConstant('{app}\{#mpchc_exe}'));
+      RegWriteStringValue(HKCU, '{#settings_key}', 'ExePath', ExpandConstant('{app}\{#mpchc_exe}'));
     end;
 
     iLanguage := StrToInt(ExpandConstant('{cm:langid}'));
@@ -528,7 +501,7 @@ begin
       if FileExists(ExpandConstant('{app}\{#mpchc_ini}')) then
         SetIniInt('Settings', 'InterfaceLanguage', iLanguage, ExpandConstant('{app}\{#mpchc_ini}'))
       else
-        RegWriteDWordValue(HKCU, 'Software\MPC-HC\MPC-HC\Settings', 'InterfaceLanguage', iLanguage);
+        RegWriteDWordValue(HKCU, '{#settings_key}\Settings', 'InterfaceLanguage', iLanguage);
     end;
   end;
 
@@ -537,17 +510,12 @@ end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
-  // When uninstalling, ask the user to delete MPC-HC settings
+  // When uninstalling, ask the user to delete this build's settings. HKLM\{#settings_root}
+  // holds machine-wide defaults set by an administrator, so it stays.
   if (CurUninstallStep = usUninstall) and SettingsExist() then begin
     if SuppressibleMsgBox(CustomMessage('msg_DeleteSettings'), mbConfirmation, MB_YESNO or MB_DEFBUTTON2, IDNO) = IDYES then begin
       CleanUpSettingsAndFiles();
-      CleanUpOldSettingsAndFiles();
     end;
-
-    RegDeleteValue(HKLM, 'SOFTWARE\MPC-HC\MPC-HC', 'ExePath')
-    RegDeleteKeyIfEmpty(HKLM, 'SOFTWARE\MPC-HC\MPC-HC');
-    RegDeleteKeyIfEmpty(HKLM, 'SOFTWARE\MPC-HC');
-
   end;
 end;
 

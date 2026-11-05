@@ -44,8 +44,10 @@
 #include <mutex>
 #include <afxwinappex.h>
 
-#define MPC_WND_CLASS_NAME L"MediaPlayerClassicW"
-#define MPC_RECOVERY_MUTEX_NAME L"MediaPlayerClassicW_RedirectRecovery"
+// Also the name of the single-instance mutex. Distinct from the official build's
+// "MediaPlayerClassicW", so neither build forwards files to the other's window.
+#define MPC_WND_CLASS_NAME L"MediaPlayerClassicCustomW"
+#define MPC_RECOVERY_MUTEX_NAME L"MediaPlayerClassicCustomW_RedirectRecovery"
 
 // define the default logo we use
 #define DEF_LOGO IDF_LOGO3
@@ -203,10 +205,16 @@ private:
     // SetHistoryInAppData().
     bool UseAppDataForHistory();
     // Resolved location of the MediaHistory INI (portable mode): next to the
-    // executable by default, %APPDATA%\MPC-HC when the HistoryInAppData option
-    // is set or the program folder is not writable. Carries an existing file
-    // over when the location changes.
+    // executable by default, %APPDATA%\MPC-HC Custom when the HistoryInAppData
+    // option is set or the program folder is not writable. Carries an existing
+    // file over when the location changes.
     CStringW ResolveHistoryIniPath();
+    // One-time copy of the official build's %APPDATA%\MPC-HC into this build's
+    // own data folder, done while that folder does not exist yet.
+    void MigrateOfficialAppData();
+    // One-time import of the official build's HKCU settings key into this build's
+    // own key, done on the first launch in registry mode.
+    void MigrateOfficialRegistrySettings();
     // Set up the settings store: in portable (INI) mode, create the separate
     // MediaHistory store and perform the one-time split out of the main file.
     void SetupSettingsStore();
@@ -219,13 +227,13 @@ private:
     void ApplySettingsPolicies();
     // Route a section to the MediaHistory store when applicable, else m_Profile.
     CProfile& ProfileForSection(LPCWSTR lpszSection);
-    // Import machine-wide default settings from HKLM\Software\MPC-HC into the
+    // Import machine-wide default settings from HKLM\Software\MPC-HC Custom into the
     // user store once, gated by SettingsReset / SettingsTimestamp (issue #2347).
     void ApplyHKLMDefaults();
     void ImportHKLMTree(HKEY hKey, const CStringW& section);
 
 public:
-    // The settings store (HKCU\Software\MPC-HC\MPC-HC or <exe>.ini). All
+    // The settings store (HKCU\Software\MPC-HC Custom\MPC-HC Custom or <exe>.ini). All
     // GetProfile*/WriteProfile* overrides below delegate to it (via
     // ProfileForSection).
     CProfile m_Profile;

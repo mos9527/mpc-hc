@@ -1,4 +1,4 @@
-# mos9527's MPC-HC
+# MPC-HC Custom
 
 [![Build](https://github.com/mos9527/mpc-hc/actions/workflows/build.yml/badge.svg)](https://github.com/mos9527/mpc-hc/actions/workflows/build.yml)
 [![Nightly Builds](https://img.shields.io/badge/mpc-builds-cyan)](https://nightly.link/mos9527/mpc-hc/workflows/build/develop?preview)

@@ -30,11 +30,11 @@ msgid "Translations"
 msgstr ""
 
 msgctxt "CustomMessages_msg_DeleteSettings"
-msgid "Do you also want to delete MPC-HC settings?\n\nIf you plan on installing MPC-HC again then you do not have to delete them."
+msgid "Do you also want to delete MPC-HC Custom settings?\n\nIf you plan on installing MPC-HC Custom again then you do not have to delete them."
 msgstr ""
 
 msgctxt "CustomMessages_msg_simd_sse2"
-msgid "This build of MPC-HC requires a CPU with SSE2 extension support.\n\nYour CPU does not have those capabilities."
+msgid "This build of MPC-HC Custom requires a CPU with SSE2 extension support.\n\nYour CPU does not have those capabilities."
 msgstr ""
 
 msgctxt "CustomMessages_run_DownloadToolbarImages"

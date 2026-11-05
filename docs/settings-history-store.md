@@ -33,7 +33,7 @@ key fine, and it keeps the design minimal).
 
 | Member | Backing | Lifetime |
 |---|---|---|
-| `m_Profile` | Main settings store: `<exe-basename>.ini` or `HKCU\Software\MPC-HC\MPC-HC`. | Always present. |
+| `m_Profile` | Main settings store: `<exe-basename>.ini` or `HKCU\Software\MPC-HC Custom\MPC-HC Custom`. | Always present. |
 | `m_HistoryProfile` (`unique_ptr`) | MediaHistory store: a second INI-mode `CProfile` at `<exe-basename>.history.ini`. | Created **only in portable/INI mode**; **null in registry mode**. |
 
 The history store is a full `CProfile`, so `history.ini` uses the same on-disk
@@ -80,7 +80,7 @@ CMPlayerCApp::GetProfileString ── ProfileForSection("MediaHistory\\<hash>")
 ## Location option and fallback (`HistoryInAppData`)
 
 By default the history INI sits next to the executable. Two things relocate it
-to `%APPDATA%\MPC-HC\<exe-basename>.history.ini` instead:
+to `%APPDATA%\MPC-HC Custom\<exe-basename>.history.ini` instead:
 
 - the **`HistoryInAppData`** advanced option (Options → Advanced) — e.g. a
   shared/portable install where each user should keep private history;
@@ -141,7 +141,7 @@ anything — the two histories just diverge.
 
 | Aspect | INI (portable) | Registry (installed) |
 |---|---|---|
-| History location | `<exe>.history.ini` (separate file) | `HKCU\Software\MPC-HC\MPC-HC` (same key) |
+| History location | `<exe>.history.ini` (separate file) | `HKCU\Software\MPC-HC Custom\MPC-HC Custom` (same key) |
 | `m_HistoryProfile` | non-null | null |
 | Routing for `MediaHistory[...]` | `*m_HistoryProfile` | `m_Profile` |
 | One-time split | performed | not applicable |
