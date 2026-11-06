@@ -2969,6 +2969,9 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
                 SeekTo(queuedSeek.rtPos, queuedSeek.bShowOSD);
             }
             break;
+        case TIMER_FLOATING_CLICKTHROUGH:
+            UpdateFloatingClickThroughHold();
+            break;
         default:
             if (nIDEvent >= TIMER_ONETIME_START && nIDEvent <= TIMER_ONETIME_END) {
                 m_timerOneTime.NotifySubscribers(nIDEvent);
@@ -9245,7 +9248,7 @@ void CMainFrame::OnViewFloating()
         SetFloating(true);
     }
 
-    static const LPCWSTR names[] = { L"transparent", L"caption", L"mica", L"acrylic", L"tabbed" };
+    static const LPCWSTR names[] = { L"transparent (hold Ctrl to interact)", L"caption", L"mica", L"acrylic", L"tabbed" };
     static_assert(_countof(names) == (size_t)FloatingStyle::Count, "one name per floating style");
     CStringW msg;
     msg.Format(L"Floating: %s", names[(int)m_floatingStyle]);
@@ -9330,6 +9333,7 @@ void CMainFrame::UpdateFloatingFrame()
     const bool bApplied = SUCCEEDED(::DwmExtendFrameIntoClientArea(m_hWnd, &margins));
     m_bFloatingGlass = bGlass && bApplied;
     m_floatingGlassStyle = bApplied ? style : FloatingStyle::Transparent;
+    SetFloatingClickThrough(m_bFloatingGlass && m_floatingGlassStyle == FloatingStyle::Transparent);
 
     // Windows 11 outlines and rounds windows: neither belongs around a see-through one, while the
     // backdrops look like a regular window, popup or not. Both attributes fail harmlessly
@@ -9342,6 +9346,55 @@ void CMainFrame::UpdateFloatingFrame()
     ::DwmSetWindowAttribute(m_hWnd, kDwmCornerPreference, &corner, sizeof(corner));
 
     RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+}
+
+void CMainFrame::SetFloatingClickThrough(bool bClickThrough)
+{
+    if (bClickThrough == m_bFloatingClickThrough) {
+        return;
+    }
+    m_bFloatingClickThrough = bClickThrough;
+
+    // Window hit testing skips a top-level window only when it is both layered and transparent,
+    // its children with it. A constant alpha of 255 changes nothing to the composition: DWM still
+    // blends the surface by its own alpha over the extended frame, so the see-through look stays.
+    if (bClickThrough) {
+        ModifyStyleEx(0, WS_EX_LAYERED | WS_EX_TRANSPARENT);
+        ::SetLayeredWindowAttributes(m_hWnd, 0, 255, LWA_ALPHA);
+        SetTimer(TIMER_FLOATING_CLICKTHROUGH, 100, nullptr);
+    } else {
+        KillTimer(TIMER_FLOATING_CLICKTHROUGH);
+        ModifyStyleEx(WS_EX_LAYERED | WS_EX_TRANSPARENT, 0);
+    }
+}
+
+void CMainFrame::UpdateFloatingClickThroughHold()
+{
+    if (!m_bFloatingClickThrough) {
+        KillTimer(TIMER_FLOATING_CLICKTHROUGH);
+        return;
+    }
+
+    // Holding Ctrl over the window lets it take the mouse again, to move it, use its menu, etc.
+    // Released, the clicks go through once more, but not in the middle of a drag or a click.
+    const bool bCtrl = ::GetAsyncKeyState(VK_CONTROL) < 0;
+    const bool bTransparent = !!(GetExStyle() & WS_EX_TRANSPARENT);
+    if (bTransparent) {
+        if (bCtrl) {
+            CPoint pt;
+            CRect rc;
+            GetWindowRect(rc);
+            if (::GetCursorPos(&pt) && rc.PtInRect(pt)) {
+                ModifyStyleEx(WS_EX_TRANSPARENT, 0);
+            }
+        }
+    } else if (!bCtrl) {
+        const bool bButtons = ::GetAsyncKeyState(VK_LBUTTON) < 0 || ::GetAsyncKeyState(VK_RBUTTON) < 0
+                              || ::GetAsyncKeyState(VK_MBUTTON) < 0;
+        if (!bButtons && !::GetCapture()) {
+            ModifyStyleEx(0, WS_EX_TRANSPARENT);
+        }
+    }
 }
 
 void CMainFrame::ApplyCustomPresetChange()

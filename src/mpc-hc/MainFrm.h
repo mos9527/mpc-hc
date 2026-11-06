@@ -228,6 +228,7 @@ private:
         TIMER_HIDER,
         TIMER_WINDOW_FULLSCREEN,
         TIMER_DELAYEDSEEK,
+        TIMER_FLOATING_CLICKTHROUGH,
         TIMER_ONETIME_START,
         TIMER_ONETIME_END = TIMER_ONETIME_START + 127,
     };
@@ -415,13 +416,17 @@ private:
     // by extending the DWM frame over the whole client area. Pixels the views leave at alpha 0 show
     // the desktop; CMouseWndWithArtView composes premultiplied alpha for the cover and the lyrics.
     // Selecting the preset again cycles through the DWM backdrops shown behind instead.
+    // Transparent also lets the mouse through to the windows below, except while Ctrl is held over it.
     enum class FloatingStyle { Transparent, Caption, Mica, Acrylic, Tabbed, Count };
     bool m_bFloating = false;
     FloatingStyle m_floatingStyle = FloatingStyle::Transparent;
     bool m_bFloatingGlass = false; // the extended frame is currently applied
     FloatingStyle m_floatingGlassStyle = FloatingStyle::Transparent; // ... with this background
+    bool m_bFloatingClickThrough = false; // WS_EX_LAYERED | WS_EX_TRANSPARENT applied
     void SetFloating(bool bFloating);
     void UpdateFloatingFrame();
+    void SetFloatingClickThrough(bool bClickThrough);
+    void UpdateFloatingClickThroughHold();
     bool IsFloatingTransparent() const { return m_bFloatingGlass; }
 
     // dynamic menus
