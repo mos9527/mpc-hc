@@ -416,7 +416,8 @@ private:
     // by extending the DWM frame over the whole client area. Pixels the views leave at alpha 0 show
     // the desktop; CMouseWndWithArtView composes premultiplied alpha for the cover and the lyrics.
     // Selecting the preset again cycles through the DWM backdrops shown behind instead.
-    // Transparent also lets the mouse through to the windows below, except while Ctrl is held over it.
+    // Transparent also lets the mouse through to the windows below wherever nothing is shown:
+    // anywhere but the video, or the cover, logo and lyrics pixels that are not fully transparent.
     enum class FloatingStyle { Transparent, Caption, Mica, Acrylic, Tabbed, Count };
     bool m_bFloating = false;
     FloatingStyle m_floatingStyle = FloatingStyle::Transparent;
@@ -426,8 +427,9 @@ private:
     void SetFloating(bool bFloating);
     void UpdateFloatingFrame();
     void SetFloatingClickThrough(bool bClickThrough);
-    void UpdateFloatingClickThroughHold();
+    void UpdateFloatingClickThrough();
     bool IsFloatingTransparent() const { return m_bFloatingGlass; }
+    bool IsFloatingClickThrough() const { return m_bFloatingClickThrough; }
 
     // dynamic menus
 

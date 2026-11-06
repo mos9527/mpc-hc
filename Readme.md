@@ -13,7 +13,9 @@ Builds are available from [nightly](https://nightly.link/mos9527/mpc-hc/workflow
 - `.lrc` (embedded or external) lyrics support in Audio-only view, rendered via Internal Subtitle Renderer with expanded style settings. Shown as a panel or as subtitles, either optionally in tategaki (vertical writing, with its own font option).
 - `Floating` (shortcut: <kbd>5</kbd>, to enable and cycle) view preset for Audio-only view with multiple modes
 
-![](https://github.com/user-attachments/assets/80b2aee4-1504-4e7b-b055-975c00b50ddf)
+<p align="center">
+<img src="https://github.com/user-attachments/assets/4e470be6-bddd-4120-9ef1-61b43a5bb989" />
+</p>
 
 *Demo: Lyrics as Subtitles mode Tategaki/縦書き/竖排 script enabled, 0.33 Shear(x), 75% opacity with @MingLiU-ExtB font, 24 pts in Floating (transparent) mode* 
 

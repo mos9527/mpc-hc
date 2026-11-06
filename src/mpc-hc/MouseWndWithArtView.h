@@ -72,6 +72,11 @@ public:
     void SetVideoRect(const CRect& r = CRect(0, 0, 0, 0));
     CRect GetVideoRect() const { return m_vrect; }
 
+    // Whether the view shows something at pt (client coordinates) when its background is
+    // see-through: the video, or the box around the cover or logo and the lyrics lines as drawn.
+    // The click-through Floating preset lets the mouse through everywhere else.
+    bool IsOpaqueAt(CPoint pt) const;
+
     // Call when lyrics may have changed (media opened or closed, display mode changed).
     // bKeepLayout keeps the lyrics area, empty, while the next queued file loads.
     void UpdateLyrics(bool bKeepLayout = false);
@@ -106,6 +111,10 @@ protected:
     CArgbSurface m_canvas;
 
     bool IsBackgroundTransparent() const;
+    // The click-through Floating preset: the box around the art and lyrics, which takes the mouse
+    // in the see-through view only to be dragged around (the video keeps the arrow)
+    bool IsGrabArea(const CPoint& clientPoint) override;
+    bool ShowsVideo() const;
     bool ShowsArt() const;
 
     // Lyrics, read from CMainFrame::m_mediaMeta while the media is loaded
@@ -119,6 +128,13 @@ protected:
 
     bool HasLyrics() const;
     void SplitLyricsLayout(const CRect& client, CRect& art, CRect& lyrics) const;
+    // The bounding box of what the last composition of m_canvas drew, in client coordinates:
+    // the art and each lyrics line (the pixels it covers with its borders and shadow, clipped).
+    // For IsOpaqueAt; empty when nothing was drawn.
+    CRect m_rcShown = CRect(0, 0, 0, 0);
+    // Blends a lyrics line into m_canvas and records where it went
+    void BlendLyricsLine(const CLyricsRenderer::Image& img, CPoint pt, const CRect& clip, BYTE opacity = 255);
+
     // These draw into m_canvas, in its (client) coordinates
     void DrawLyrics(const CRect& rc, const CSize& client);
     // the panel in vertical writing, its columns going across the area right to left

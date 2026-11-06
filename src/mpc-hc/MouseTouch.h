@@ -64,7 +64,7 @@ private:
     ULONGLONG m_dwMouseHiderStartTick;
     bool m_bTrackingMouseLeave;
     enum class Drag { NO_DRAG, BEGIN_DRAG, DRAGGED } m_drag;
-    enum class Cursor { NONE, ARROW, HAND };
+    enum class Cursor { NONE, ARROW, HAND, GRAB };
     std::map<Cursor, HCURSOR> m_cursors;
     Cursor m_cursor;
     CPoint m_beginDragPoint;
@@ -112,6 +112,9 @@ private:
     static void CALLBACK OnTimerLeftUp(HWND hWnd, UINT nMsg, UINT_PTR nIDEvent, DWORD dwTime);
 
 protected:
+    // Where the window is only there to be dragged, shown by the move cursor instead of the arrow
+    virtual bool IsGrabArea(const CPoint& clientPoint) { return false; }
+
     void InternalOnLButtonDown(UINT nFlags, const CPoint& point);
     void InternalOnLButtonUp(UINT nFlags, const CPoint& point);
     void InternalOnMButtonDown(UINT nFlags, const CPoint& point);

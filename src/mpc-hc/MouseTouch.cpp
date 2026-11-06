@@ -43,6 +43,8 @@ CMouse::CMouse(CMainFrame* pMainFrm, bool bD3DFS/* = false*/)
     m_cursors[Cursor::NONE] = nullptr;
     m_cursors[Cursor::ARROW] = LoadCursor(nullptr, IDC_ARROW);
     m_cursors[Cursor::HAND] = LoadCursor(nullptr, IDC_HAND);
+    // Windows has no open hand; the move cursor is its sign for something to drag
+    m_cursors[Cursor::GRAB] = LoadCursor(nullptr, IDC_SIZEALL);
     ResetToBlankState();
 
     EventRouter::EventSelection evs;
@@ -578,7 +580,7 @@ bool CMouse::SelectCursor(const CPoint& screenPoint, const CPoint& clientPoint, 
     }
 
     if (!bHidden || bHiddenAndMoved || !bCanHide) {
-        m_cursor = Cursor::ARROW;
+        m_cursor = IsGrabArea(clientPoint) ? Cursor::GRAB : Cursor::ARROW;
         if (bCanHide) {
             if (!m_bMouseHiderStarted || screenPoint != m_mouseHiderStartScreenPoint) {
                 StartMouseHider(screenPoint);

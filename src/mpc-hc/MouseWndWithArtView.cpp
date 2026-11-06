@@ -118,9 +118,9 @@ BOOL CMouseWndWithArtView::OnEraseBkgnd(CDC* pDC)
 
     CRect client;
     GetClientRect(client);
+    m_rcShown.SetRectEmpty();
 
-    if ((m_pMainFrame->GetLoadState() != MLS::CLOSED || (!m_bFirstMedia && m_pMainFrame->m_controls.DelayShowNotLoaded())) &&
-            !m_pMainFrame->HasDedicatedFSVideoWindow() && !m_pMainFrame->m_fAudioOnly) {
+    if (ShowsVideo()) {
         // video: only the bars around it; GDI black has alpha 0, see-through when floating
         pDC->ExcludeClipRect(m_vrect);
         pDC->FillSolidRect(client, 0);
@@ -150,6 +150,7 @@ BOOL CMouseWndWithArtView::OnEraseBkgnd(CDC* pDC)
         if (!art.IsRectEmpty()) {
             m_resizedImg.BitBlt(m_canvas.GetDC(), art.left, art.top);
             m_canvas.SetOpaque(art);
+            m_rcShown.UnionRect(m_rcShown, art);
         }
     }
 
@@ -174,6 +175,38 @@ bool CMouseWndWithArtView::IsBackgroundTransparent() const
 {
     // only the view inside the main frame, not the separate fullscreen window
     return m_pMainFrame->IsFloatingTransparent() && ::GetAncestor(m_hWnd, GA_PARENT) == m_pMainFrame->GetSafeHwnd();
+}
+
+bool CMouseWndWithArtView::IsGrabArea(const CPoint& clientPoint)
+{
+    return m_pMainFrame->IsFloatingClickThrough() && IsBackgroundTransparent() && !ShowsVideo()
+           && IsOpaqueAt(clientPoint);
+}
+
+bool CMouseWndWithArtView::ShowsVideo() const
+{
+    return (m_pMainFrame->GetLoadState() != MLS::CLOSED || (!m_bFirstMedia && m_pMainFrame->m_controls.DelayShowNotLoaded()))
+           && !m_pMainFrame->HasDedicatedFSVideoWindow() && !m_pMainFrame->m_fAudioOnly;
+}
+
+bool CMouseWndWithArtView::IsOpaqueAt(CPoint pt) const
+{
+    if (ShowsVideo()) {
+        // the bars around the video are left at alpha 0
+        return !!m_vrect.PtInRect(pt);
+    }
+    // what OnEraseBkgnd last composed, as one box around the cover or logo and the lyrics lines:
+    // the gaps between letters, lines, and the cover and the lyrics take the mouse too
+    return !!m_rcShown.PtInRect(pt);
+}
+
+void CMouseWndWithArtView::BlendLyricsLine(const CLyricsRenderer::Image& img, CPoint pt, const CRect& clip, BYTE opacity /*= 255*/)
+{
+    m_canvas.Blend(img.bits.data(), img.rc.Size(), pt, clip, opacity);
+    CRect r;
+    if (opacity && r.IntersectRect(CRect(pt, img.rc.Size()), clip)) {
+        m_rcShown.UnionRect(m_rcShown, r);
+    }
 }
 
 bool CMouseWndWithArtView::ShowsArt() const
@@ -535,7 +568,7 @@ void CMouseWndWithArtView::DrawLyrics(const CRect& rc, const CSize& client)
     auto draw = [&](int i, int top, BYTE opacity) {
         if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(i)) {
             const CPoint pt(img->rc.left, top + img->rc.top - img->rcBox.top);
-            m_canvas.Blend(img->bits.data(), img->rc.Size(), pt, rc, opacity);
+            BlendLyricsLine(*img, pt, rc, opacity);
         }
     };
     auto height = [&](int i) {
@@ -622,7 +655,7 @@ void CMouseWndWithArtView::DrawLyricsTategaki(const CRect& rc, const CSize& clie
         if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(i)) {
             const int top = area.top + (area.Height() - img->rcBox.Height()) / 2;
             const CPoint pt(left + img->rc.left - img->rcBox.left, top + img->rc.top - img->rcBox.top);
-            m_canvas.Blend(img->bits.data(), img->rc.Size(), pt, rc, opacity);
+            BlendLyricsLine(*img, pt, rc, opacity);
         }
     };
     auto width = [&](int i) {
@@ -695,6 +728,6 @@ void CMouseWndWithArtView::DrawLyricsLine(const CSize& client)
     m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Line, m_bLyricsTategaki, client, m_pMainFrame->m_dpi.ScaleFactorY());
     m_lyricsRenderer.Retain(cur, cur);
     if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(cur)) {
-        m_canvas.Blend(img->bits.data(), img->rc.Size(), img->rc.TopLeft(), CRect(CPoint(0, 0), client));
+        BlendLyricsLine(*img, img->rc.TopLeft(), CRect(CPoint(0, 0), client));
     }
 }
