@@ -599,6 +599,9 @@
     <ClCompile Include="Lyrics.cpp">
       <Filter>Main View</Filter>
     </ClCompile>
+    <ClCompile Include="LyricsRenderer.cpp">
+      <Filter>Main View</Filter>
+    </ClCompile>
     <ClCompile Include="MediaMetadata.cpp">
       <Filter>Main View</Filter>
     </ClCompile>
@@ -1200,6 +1203,9 @@
       <Filter>Main View</Filter>
     </ClInclude>
     <ClInclude Include="Lyrics.h">
+      <Filter>Main View</Filter>
+    </ClInclude>
+    <ClInclude Include="LyricsRenderer.h">
       <Filter>Main View</Filter>
     </ClInclude>
     <ClInclude Include="MediaMetadata.h">

@@ -2523,6 +2523,21 @@ bool CRenderedTextSubtitle::Init(CSize size, const CRect& vidrect)
     return true;
 }
 
+CRect CRenderedTextSubtitle::GetLayoutRect(int entry)
+{
+    CAutoLock cAutoLock(&renderLock);
+    if (entry < 0 || (size_t)entry >= GetCount() || m_size.cx <= 0 || m_size.cy <= 0) {
+        return CRect(0, 0, 0, 0);
+    }
+    const CSubtitle* s = GetSubtitle(entry);
+    if (!s || s->IsEmpty()) {
+        return CRect(0, 0, 0, 0);
+    }
+    // m_rect is in 1/8 pixels
+    const CRect& r = s->m_rect;
+    return CRect(r.left >> 3, r.top >> 3, (r.right + 7) >> 3, (r.bottom + 7) >> 3);
+}
+
 void CRenderedTextSubtitle::Deinit()
 {
     CAutoLock cAutoLock(&renderLock);

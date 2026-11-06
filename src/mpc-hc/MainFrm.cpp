@@ -24984,6 +24984,11 @@ bool CMainFrame::ApplySubtitleRenderingParameters(ISubStream* pSubStream, bool b
 
 void CMainFrame::UpdateSubtitleRenderingParameters()
 {
+    // lyrics are drawn in the subtitle style; the view picks the settings up when painting
+    if (m_fAudioOnly && GetLoadState() == MLS::LOADED) {
+        m_wndView.Invalidate();
+    }
+
     if (!m_pCAP) {
         return;
     }

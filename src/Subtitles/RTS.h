@@ -586,6 +586,10 @@ public:
     void Deinit();
     CString GetPath();
 
+    // Layout box of an entry for the size given to Init(), in pixels: its lines as placed by the
+    // alignment and margins, without borders, shadow or effects. Empty when it has no lines.
+    CRect GetLayoutRect(int entry);
+
     bool m_webvtt_allow_clear;
     //FT cache for RTS
     FTLibraryData m_ftLibrary;

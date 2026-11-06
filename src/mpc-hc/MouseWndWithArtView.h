@@ -23,11 +23,12 @@
 
 #include "MPCPngImage.h"
 #include "MouseTouch.h"
+#include "LyricsRenderer.h"
 
 class CMainFrame;
 
 // 32 bpp top-down DIB section with premultiplied alpha, selected into its own memory DC.
-// GDI leaves the alpha byte at 0, so text is drawn into one as a coverage mask and composited.
+// GDI leaves the alpha byte at 0, see SetOpaque.
 class CArgbSurface
 {
 public:
@@ -41,8 +42,8 @@ public:
     void Clear(DWORD argb = 0);
     // Sets the alpha of every pixel in rc to 255, after opaque GDI drawing
     void SetOpaque(const CRect& rc);
-    // Premultiplied "over" of color through the coverage in mask (its BGR channels; black = none), at pt
-    void Composite(const CArgbSurface& mask, CPoint pt, COLORREF color);
+    // Premultiplied "over" of a premultiplied ARGB image at pt, its opacity scaled, within clip
+    void Blend(const DWORD* bits, CSize size, CPoint pt, const CRect& clip, BYTE opacity = 255);
 
     HDC GetDC() const { return m_hDC; }
     int Width() const { return m_width; }
@@ -85,10 +86,6 @@ public:
     static bool GetShowCoverArt();
     static void SetShowCoverArt(bool bShow);
 
-    // Black outline around the lyrics text, saved in the settings
-    static bool GetLyricsOutline();
-    static void SetLyricsOutline(bool bOutline);
-
 protected:
     CMPCPngImage m_img;
     CImage m_resizedImg;
@@ -104,8 +101,6 @@ protected:
     // The art view (cover, logo, lyrics) is composed here, then copied to the window in one blit.
     // Its alpha is only used when the window background is see-through (the Floating preset).
     CArgbSurface m_canvas;
-    // Coverage masks of the lyrics text and of its outline
-    CArgbSurface m_textMask, m_outlineMask;
 
     bool IsBackgroundTransparent() const;
     bool ShowsArt() const;
@@ -115,24 +110,14 @@ protected:
     LyricsView m_lyricsView = LyricsView::None;
     int m_nLyricsLine = -1;
     CRect m_rcLyrics;
-    CFont m_lyricsFont, m_lyricsFontBold, m_lyricsLineFont;
-    int m_nLyricsFontPx = 0, m_nLyricsLineFontPx = 0;
-    BYTE m_nLyricsFontQuality = 0;
+    // The text, in the default subtitle style
+    CLyricsRenderer m_lyricsRenderer;
 
     bool HasLyrics() const;
     void SplitLyricsLayout(const CRect& client, CRect& art, CRect& lyrics) const;
-    CRect LyricsLineRect(const CRect& client);
-    // Both draw into m_canvas, rc in its (client) coordinates
-    void DrawLyrics(const CRect& rc, bool bTransparent);
-    void DrawLyricsLine(const CRect& rc);
-    void EnsureLyricsFonts(int px, BYTE quality);
-    void EnsureLyricsLineFont(int px);
-    // Clears the text mask, and the outline mask when used, at the given size
-    bool BeginTextMasks(const CSize& size, bool bOutline);
-    // Draws text into the masks; opacity scales its coverage, outline is the stroke width (0 = none)
-    void DrawTextToMasks(const CStringW& text, const CRect& r, UINT fmt, CFont* pFont, double opacity, int outline);
-    // Composites the outline (black) and the text (fg) at pt into m_canvas
-    void CompositeTextMasks(CPoint pt, COLORREF fg, bool bOutline);
+    // Both draw into m_canvas, in its (client) coordinates
+    void DrawLyrics(const CRect& rc, const CSize& client);
+    void DrawLyricsLine(const CSize& client);
 
     DECLARE_MESSAGE_MAP()
 

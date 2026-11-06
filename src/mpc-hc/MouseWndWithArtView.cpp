@@ -154,10 +154,11 @@ BOOL CMouseWndWithArtView::OnEraseBkgnd(CDC* pDC)
     }
 
     if (m_lyricsView == LyricsView::Panel) {
-        DrawLyrics(m_rcLyrics, bTransparent);
+        DrawLyrics(m_rcLyrics, client.Size());
     } else if (m_lyricsView == LyricsView::Line) {
-        m_rcLyrics = LyricsLineRect(client);
-        DrawLyricsLine(m_rcLyrics);
+        // placed by the subtitle style, anywhere in the view
+        m_rcLyrics = client;
+        DrawLyricsLine(client.Size());
     }
 
     // one blit, so a lyrics line change does not flicker; a 32 bpp source keeps its alpha
@@ -315,38 +316,33 @@ void CArgbSurface::SetOpaque(const CRect& rc)
     }
 }
 
-void CArgbSurface::Composite(const CArgbSurface& mask, CPoint pt, COLORREF color)
+void CArgbSurface::Blend(const DWORD* bits, CSize size, CPoint pt, const CRect& clip, BYTE opacity /*= 255*/)
 {
-    if (!m_pBits || !mask.m_pBits) {
+    CRect r;
+    if (!m_pBits || !bits || !opacity
+            || !r.IntersectRect(CRect(pt, size), clip) || !r.IntersectRect(r, CRect(0, 0, m_width, m_height))) {
         return;
     }
     ::GdiFlush();
 
-    const UINT cr = GetRValue(color), cg = GetGValue(color), cb = GetBValue(color);
-    const int px = pt.x, py = pt.y; // LONG
-    const int x0 = std::max(0, -px), y0 = std::max(0, -py);
-    const int x1 = std::min(mask.m_width, m_width - px), y1 = std::min(mask.m_height, m_height - py);
-    auto over = [](UINT src, UINT coverage, UINT dst) {
-        return (src * coverage + dst * (255 - coverage) + 127) / 255;
-    };
-
-    for (int y = y0; y < y1; y++) {
-        const DWORD* src = mask.m_pBits + size_t(y) * mask.m_width;
-        DWORD* dst = m_pBits + size_t(y + py) * m_width + px;
-        for (int x = x0; x < x1; x++) {
-            const DWORD m = src[x];
-            if (!(m & 0x00FFFFFF)) {
+    for (int y = r.top; y < r.bottom; y++) {
+        const DWORD* src = bits + size_t(y - pt.y) * size.cx + (r.left - pt.x);
+        DWORD* dst = m_pBits + size_t(y) * m_width + r.left;
+        for (int x = 0, n = r.Width(); x < n; x++) {
+            DWORD s = src[x];
+            if (!s) {
                 continue;
             }
-            // per channel, so ClearType masks keep their subpixel coverage on an opaque canvas
-            const UINT mb = m & 0xFF, mg = (m >> 8) & 0xFF, mr = (m >> 16) & 0xFF;
-            const UINT ma = std::max(mr, std::max(mg, mb));
+            if (opacity != 255) {
+                // all channels, the color being premultiplied
+                auto scale = [opacity](DWORD c) { return (c * opacity + 127) / 255; };
+                s = (scale(s >> 24) << 24) | (scale((s >> 16) & 0xFF) << 16) | (scale((s >> 8) & 0xFF) << 8) | scale(s & 0xFF);
+            }
+            const DWORD ia = 255 - (s >> 24);
             const DWORD d = dst[x];
-            const UINT b = over(cb, mb, d & 0xFF);
-            const UINT g = over(cg, mg, (d >> 8) & 0xFF);
-            const UINT r = over(cr, mr, (d >> 16) & 0xFF);
-            const UINT a = ma + ((d >> 24) * (255 - ma) + 127) / 255;
-            dst[x] = (a << 24) | (r << 16) | (g << 8) | b;
+            auto over = [ia](DWORD sc, DWORD dc) { return sc + (dc * ia + 127) / 255; };
+            dst[x] = (over(s >> 24, d >> 24) << 24) | (over((s >> 16) & 0xFF, (d >> 16) & 0xFF) << 16)
+                     | (over((s >> 8) & 0xFF, (d >> 8) & 0xFF) << 8) | over(s & 0xFF, d & 0xFF);
         }
     }
 }
@@ -361,12 +357,10 @@ namespace
     constexpr UINT LYRICS_POLL_MS = 50;       // the seek bar position itself is polled every 100 ms by default
     constexpr LPCTSTR LYRICS_MODE_KEY = _T("LyricsDisplay");
     constexpr LPCTSTR COVER_ART_KEY = _T("AudioViewCoverArt");
-    constexpr LPCTSTR LYRICS_OUTLINE_KEY = _T("LyricsOutline");
 
     // not loaded yet while negative
     int s_lyricsMode = -1;
     int s_showCoverArt = -1;
-    int s_lyricsOutline = -1;
 
     int LoadViewSetting(int& cache, LPCTSTR key, int def)
     {
@@ -380,26 +374,6 @@ namespace
     {
         cache = value;
         AfxGetApp()->WriteProfileInt(IDS_R_SETTINGS, key, value);
-    }
-
-    // selects a GDI object into a DC for the scope, so fonts are never left selected when deleted
-    class CSelectScope
-    {
-        HDC m_hDC;
-        HGDIOBJ m_hOld;
-    public:
-        CSelectScope(HDC hDC, HGDIOBJ hObj) : m_hDC(hDC), m_hOld(::SelectObject(hDC, hObj)) {}
-        ~CSelectScope() { ::SelectObject(m_hDC, m_hOld); }
-        CSelectScope(const CSelectScope&) = delete;
-        CSelectScope& operator=(const CSelectScope&) = delete;
-    };
-
-    int MeasureText(HDC hDC, CFont* pFont, LPCWSTR text, int left, int right, UINT fmt)
-    {
-        CSelectScope font(hDC, pFont->GetSafeHandle());
-        CRect r(left, 0, right, 0);
-        ::DrawTextW(hDC, (text && *text) ? text : L" ", -1, r, fmt | DT_CALCRECT);
-        return r.Height();
     }
 }
 
@@ -425,16 +399,6 @@ bool CMouseWndWithArtView::GetShowCoverArt()
 void CMouseWndWithArtView::SetShowCoverArt(bool bShow)
 {
     StoreViewSetting(s_showCoverArt, COVER_ART_KEY, bShow ? TRUE : FALSE);
-}
-
-bool CMouseWndWithArtView::GetLyricsOutline()
-{
-    return !!LoadViewSetting(s_lyricsOutline, LYRICS_OUTLINE_KEY, TRUE);
-}
-
-void CMouseWndWithArtView::SetLyricsOutline(bool bOutline)
-{
-    StoreViewSetting(s_lyricsOutline, LYRICS_OUTLINE_KEY, bOutline ? TRUE : FALSE);
 }
 
 bool CMouseWndWithArtView::HasLyrics() const
@@ -464,6 +428,8 @@ void CMouseWndWithArtView::UpdateLyrics(bool bKeepLayout /*= false*/)
     if (view != LyricsView::None || !bKeepLayout) {
         m_lyricsView = view;
     }
+    // the lyrics may have been replaced
+    m_lyricsRenderer.Reset();
 
     if (!m_hWnd) {
         return;
@@ -512,101 +478,7 @@ void CMouseWndWithArtView::SplitLyricsLayout(const CRect& client, CRect& art, CR
     }
 }
 
-void CMouseWndWithArtView::EnsureLyricsFonts(int px, BYTE quality)
-{
-    if (px == m_nLyricsFontPx && quality == m_nLyricsFontQuality && m_lyricsFont.GetSafeHandle()) {
-        return;
-    }
-    m_lyricsFont.DeleteObject();
-    m_lyricsFontBold.DeleteObject();
-
-    LOGFONT lf = {};
-    m_pMainFrame->m_dpi.GetMessageFont(&lf);
-    lf.lfHeight = -px;
-    lf.lfWidth = 0;
-    lf.lfWeight = FW_NORMAL;
-    lf.lfQuality = quality;
-    m_lyricsFont.CreateFontIndirect(&lf);
-    lf.lfWeight = FW_BOLD;
-    m_lyricsFontBold.CreateFontIndirect(&lf);
-    m_nLyricsFontPx = px;
-    m_nLyricsFontQuality = quality;
-}
-
-void CMouseWndWithArtView::EnsureLyricsLineFont(int px)
-{
-    if (px == m_nLyricsLineFontPx && m_lyricsLineFont.GetSafeHandle()) {
-        return;
-    }
-    m_lyricsLineFont.DeleteObject();
-
-    LOGFONT lf = {};
-    m_pMainFrame->m_dpi.GetMessageFont(&lf);
-    lf.lfHeight = -px;
-    lf.lfWidth = 0;
-    lf.lfWeight = FW_SEMIBOLD;
-    // drawn over the cover: grayscale antialiasing, ClearType fringes show on images
-    lf.lfQuality = ANTIALIASED_QUALITY;
-    m_lyricsLineFont.CreateFontIndirect(&lf);
-    m_nLyricsLineFontPx = px;
-}
-
-bool CMouseWndWithArtView::BeginTextMasks(const CSize& size, bool bOutline)
-{
-    if (!m_textMask.Create(size.cx, size.cy)) {
-        return false;
-    }
-    m_textMask.Clear();
-    if (bOutline) {
-        if (!m_outlineMask.Create(size.cx, size.cy)) {
-            return false;
-        }
-        m_outlineMask.Clear();
-    }
-    return true;
-}
-
-void CMouseWndWithArtView::DrawTextToMasks(const CStringW& text, const CRect& r, UINT fmt, CFont* pFont, double opacity, int outline)
-{
-    if (text.IsEmpty()) {
-        return;
-    }
-    // drawn in gray on black: each channel ends up as coverage * opacity
-    const BYTE v = BYTE(std::lround(255.0 * std::max(0.0, std::min(1.0, opacity))));
-
-    auto draw = [&](const CArgbSurface& mask, const CRect& rc) {
-        const HDC hDC = mask.GetDC();
-        CSelectScope font(hDC, pFont->GetSafeHandle());
-        ::SetBkMode(hDC, TRANSPARENT);
-        ::SetTextColor(hDC, RGB(v, v, v));
-        CRect rr = rc;
-        ::DrawTextW(hDC, text, -1, rr, fmt);
-    };
-
-    draw(m_textMask, r);
-
-    if (outline > 0) {
-        // the text stamped around a circle; overlapping stamps never exceed v
-        const int steps = outline <= 2 ? 8 : 16;
-        const double kPi = 3.14159265358979323846;
-        for (int k = 0; k < steps; k++) {
-            const double a = k * 2 * kPi / steps;
-            CRect o = r;
-            o.OffsetRect((int)std::lround(outline * cos(a)), (int)std::lround(outline * sin(a)));
-            draw(m_outlineMask, o);
-        }
-    }
-}
-
-void CMouseWndWithArtView::CompositeTextMasks(CPoint pt, COLORREF fg, bool bOutline)
-{
-    if (bOutline) {
-        m_canvas.Composite(m_outlineMask, pt, RGB(0, 0, 0));
-    }
-    m_canvas.Composite(m_textMask, pt, fg);
-}
-
-void CMouseWndWithArtView::DrawLyrics(const CRect& rc, bool bTransparent)
+void CMouseWndWithArtView::DrawLyrics(const CRect& rc, const CSize& client)
 {
     if (rc.IsRectEmpty() || !HasLyrics()) {
         return;
@@ -618,121 +490,96 @@ void CMouseWndWithArtView::DrawLyrics(const CRect& rc, bool bTransparent)
     const int cur = lyrics.LineAt(m_pMainFrame->GetPos());
     m_nLyricsLine = cur;
 
-    // ClearType needs an opaque background to blend with
-    EnsureLyricsFonts(std::max(dpi.ScaleY(14), std::min(dpi.ScaleY(28), rc.Height() / 16)),
-                      bTransparent ? ANTIALIASED_QUALITY : CLEARTYPE_QUALITY);
-    const bool bOutline = GetLyricsOutline();
-    const int outline = bOutline ? std::max(1, m_nLyricsFontPx / 14) : 0;
-    if (!BeginTextMasks(rc.Size(), bOutline)) {
+    CRect area = rc;
+    area.DeflateRect(dpi.ScaleX(16), dpi.ScaleY(16));
+    if (area.IsRectEmpty()) {
         return;
     }
 
-    const COLORREF fg = AppIsThemeLoaded() ? CMPCTheme::TextFGColor : RGB(0xFF, 0xFF, 0xFF);
+    // a fixed size from the style, scaled by the DPI like UI text, wrapped in the area;
+    // a short view shows fewer lines, not smaller ones
+    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Panel, client, area.left, area.right, dpi.ScaleFactorY());
+    const int gap = m_lyricsRenderer.GetLineGap();
+
     // neighbours of the current line fade out by distance
     auto dimmed = [](int distance) {
-        return std::max(0.25, 0.6 - 0.1 * (distance - 1));
+        return BYTE(std::lround(255.0 * std::max(0.25, 0.6 - 0.1 * (distance - 1))));
     };
-
-    CRect area(0, 0, rc.Width(), rc.Height());
-    area.DeflateRect(dpi.ScaleX(16), dpi.ScaleY(16));
-    const int gap = m_nLyricsFontPx / 2;
-    const UINT fmt = DT_CENTER | DT_WORDBREAK | DT_NOPREFIX | DT_EDITCONTROL;
-    const HDC hMeasureDC = m_textMask.GetDC();
-
-    auto measure = [&](int i, CFont* pFont) {
-        return MeasureText(hMeasureDC, pFont, lyrics.lines[i].text, area.left, area.right, fmt);
+    // placed by its box, top at top; borders and shadow may reach past the area, not past rc
+    auto draw = [&](int i, int top, BYTE opacity) {
+        if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(i)) {
+            const CPoint pt(img->rc.left, top + img->rc.top - img->rcBox.top);
+            m_canvas.Blend(img->bits.data(), img->rc.Size(), pt, rc, opacity);
+        }
     };
-    auto draw = [&](int i, int top, int height, CFont* pFont, double opacity) {
-        DrawTextToMasks(lyrics.lines[i].text, CRect(area.left, top, area.right, top + height), fmt, pFont, opacity, outline);
+    auto height = [&](int i) {
+        return m_lyricsRenderer.GetLineHeight(i);
     };
 
     if (lyrics.timed) {
         // the current line centred, its neighbours dimmed by distance;
         // only lines that fit entirely, so no wrapped line is cut at an edge
         const int anchor = std::max(cur, 0);
-        CFont* pAnchorFont = cur >= 0 ? &m_lyricsFontBold : &m_lyricsFont;
-        const int hAnchor = measure(anchor, pAnchorFont);
+        const int hAnchor = height(anchor);
         const int topAnchor = area.top + (area.Height() - hAnchor) / 2;
-        draw(anchor, topAnchor, hAnchor, pAnchorFont, cur >= 0 ? 1.0 : dimmed(1));
+        draw(anchor, topAnchor, cur >= 0 ? 255 : dimmed(1));
+        int first = anchor, last = anchor;
 
         int y = topAnchor;
         for (int i = anchor - 1; i >= 0; i--) {
-            int h = measure(i, &m_lyricsFont);
+            const int h = height(i);
             if (y - gap - h < area.top) {
                 break;
             }
             y -= gap + h;
-            draw(i, y, h, &m_lyricsFont, dimmed(anchor - i));
+            draw(i, y, dimmed(anchor - i));
+            first = i;
         }
         y = topAnchor + hAnchor;
         for (int i = anchor + 1; i < nLines; i++) {
-            int h = measure(i, &m_lyricsFont);
+            const int h = height(i);
             if (y + gap + h > area.bottom) {
                 break;
             }
             y += gap;
-            draw(i, y, h, &m_lyricsFont, dimmed(i - anchor));
+            draw(i, y, dimmed(i - anchor));
             y += h;
+            last = i;
         }
+        m_lyricsRenderer.Retain(first, last);
     } else {
         // untimed text: static, centred when it fits
         std::vector<int> heights(nLines);
         int total = 0;
         for (int i = 0; i < nLines; i++) {
-            heights[i] = measure(i, &m_lyricsFont);
+            heights[i] = height(i);
             total += heights[i] + (i ? gap : 0);
         }
         int y = area.top + std::max(0, (area.Height() - total) / 2);
+        int last = -1;
         for (int i = 0; i < nLines && y + heights[i] <= area.bottom; i++) {
-            draw(i, y, heights[i], &m_lyricsFont, dimmed(1));
+            draw(i, y, dimmed(1));
             y += heights[i] + gap;
+            last = i;
         }
+        m_lyricsRenderer.Retain(0, last);
     }
-
-    CompositeTextMasks(rc.TopLeft(), fg, bOutline);
 }
 
-CRect CMouseWndWithArtView::LyricsLineRect(const CRect& client)
+void CMouseWndWithArtView::DrawLyricsLine(const CSize& client)
 {
-    const DpiHelper& dpi = m_pMainFrame->m_dpi;
-    EnsureLyricsLineFont(std::max(dpi.ScaleY(18), std::min(dpi.ScaleY(44), client.Height() / 14)));
-
-    // room for two wrapped lines and the outline, near the bottom like a subtitle
-    const int px = m_nLyricsLineFontPx;
-    const int height = 2 * (px * 4 / 3) + px / 4 + dpi.ScaleY(8);
-    const int bottom = client.bottom - std::max(dpi.ScaleY(12), client.Height() / 20);
-    CRect rc(client.left + dpi.ScaleX(16), bottom - height, client.right - dpi.ScaleX(16), bottom);
-    rc.IntersectRect(rc, client);
-    return rc;
-}
-
-void CMouseWndWithArtView::DrawLyricsLine(const CRect& rc)
-{
-    if (rc.IsRectEmpty() || !HasLyrics()) {
+    if (!HasLyrics()) {
         return;
     }
 
     const Lyrics& lyrics = m_pMainFrame->m_mediaMeta.lyrics;
     const int cur = lyrics.LineAt(m_pMainFrame->GetPos());
     m_nLyricsLine = cur;
-    if (cur < 0 || lyrics.lines[cur].text.IsEmpty()) {
-        return;
+
+    // exactly as a subtitle over a video of the view's size
+    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Line, client);
+    m_lyricsRenderer.Retain(cur, cur);
+    if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(cur)) {
+        m_canvas.Blend(img->bits.data(), img->rc.Size(), img->rc.TopLeft(), CRect(CPoint(0, 0), client));
     }
-
-    const CStringW& text = lyrics.lines[cur].text;
-    const bool bOutline = GetLyricsOutline();
-    const int outline = std::max(1, m_nLyricsLineFontPx / 14);
-    const UINT fmt = DT_CENTER | DT_WORDBREAK | DT_NOPREFIX | DT_EDITCONTROL;
-    if (!BeginTextMasks(rc.Size(), bOutline)) {
-        return;
-    }
-
-    CRect area(0, 0, rc.Width(), rc.Height());
-    area.DeflateRect(outline, outline);
-    const int height = MeasureText(m_textMask.GetDC(), &m_lyricsLineFont, text, area.left, area.right, fmt);
-    // bottom-aligned, as subtitles are
-    const CRect textRect(area.left, std::max(area.top, area.bottom - height), area.right, area.bottom);
-
-    DrawTextToMasks(text, textRect, fmt, &m_lyricsLineFont, 1.0, bOutline ? outline : 0);
-    CompositeTextMasks(rc.TopLeft(), RGB(0xFF, 0xFF, 0xFF), bOutline);
 }
