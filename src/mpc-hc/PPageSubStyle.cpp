@@ -40,6 +40,9 @@ CPPageSubStyle::CPPageSubStyle(bool isStyleDialog)
     , m_scaley(0)
     , m_borderStyle(0)
     , m_bRoundedOpaqueBox(FALSE)
+    , m_edgeBlur(0)
+    , m_angleX(0)
+    , m_angleY(0)
     , m_screenAlignment(0)
     , m_margin(0, 0, 0, 0)
     , m_bLinkAlphaSliders(FALSE)
@@ -92,8 +95,19 @@ void CPPageSubStyle::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_SPIN5, m_scaleySpin);
     DDX_Radio(pDX, IDC_RADIO1, m_borderStyle);
     DDX_Check(pDX, IDC_CHECK_ROUNDEDBOX, m_bRoundedOpaqueBox);
-    DDX_Control(pDX, IDC_EDIT1, m_borderWidth);
-    DDX_Control(pDX, IDC_EDIT2, m_shadowDepth);
+    DDX_Control(pDX, IDC_EDIT1, m_borderWidthX);
+    DDX_Control(pDX, IDC_EDIT_OUTLINEY, m_borderWidthY);
+    DDX_Control(pDX, IDC_EDIT2, m_shadowDepthX);
+    DDX_Control(pDX, IDC_EDIT_SHADOWY, m_shadowDepthY);
+    DDX_Control(pDX, IDC_EDIT_BLUR, m_blur);
+    DDX_Text(pDX, IDC_EDIT_EDGEBLUR, m_edgeBlur);
+    DDX_Control(pDX, IDC_SPIN_EDGEBLUR, m_edgeBlurSpin);
+    DDX_Text(pDX, IDC_EDIT_ANGLEX, m_angleX);
+    DDX_Control(pDX, IDC_SPIN_ANGLEX, m_angleXSpin);
+    DDX_Text(pDX, IDC_EDIT_ANGLEY, m_angleY);
+    DDX_Control(pDX, IDC_SPIN_ANGLEY, m_angleYSpin);
+    DDX_Control(pDX, IDC_EDIT_SHEARX, m_shearX);
+    DDX_Control(pDX, IDC_EDIT_SHEARY, m_shearY);
     DDX_Radio(pDX, IDC_RADIO3, m_screenAlignment);
     DDX_Text(pDX, IDC_EDIT7, m_margin.left);
     DDX_Control(pDX, IDC_SPIN6, m_marginLeftSpin);
@@ -191,11 +205,17 @@ BOOL CPPageSubStyle::OnInitDialog()
     // TODO: allow floats in these edit boxes
     m_spacing.SetRange(-100.0f, 100.0f);
     m_spacing = m_stss.fontSpacing;
-    while (m_stss.fontAngleZ < 0) {
-        m_stss.fontAngleZ += 360;
-    }
-    m_angle = (int)std::fmod(m_stss.fontAngleZ, 360);
+    // the edits take whole degrees in [0, 360)
+    auto angle = [](double a) {
+        a = std::fmod(a, 360.0);
+        return (int)(a < 0 ? a + 360.0 : a) % 360;
+    };
+    m_angle = angle(m_stss.fontAngleZ);
     m_angleSpin.SetRange32(0, 359);
+    m_angleX = angle(m_stss.fontAngleX);
+    m_angleXSpin.SetRange32(0, 359);
+    m_angleY = angle(m_stss.fontAngleY);
+    m_angleYSpin.SetRange32(0, 359);
     m_scalex = (int)m_stss.fontScaleX;
     m_scalexSpin.SetRange32(-10000, 10000);
     m_scaley = (int)m_stss.fontScaleY;
@@ -203,10 +223,24 @@ BOOL CPPageSubStyle::OnInitDialog()
 
     m_borderStyle = m_stss.borderStyle;
     m_bRoundedOpaqueBox = s.bSubtitleRoundedOpaqueBox;
-    m_borderWidth.SetRange(0.0f, 100.0f);
-    m_borderWidth = std::min(m_stss.outlineWidthX, m_stss.outlineWidthY);
-    m_shadowDepth.SetRange(0.0f, 100.0f);
-    m_shadowDepth = std::min(m_stss.shadowDepthX, m_stss.shadowDepthY);
+    m_borderWidthX.SetRange(0.0f, 100.0f);
+    m_borderWidthX = m_stss.outlineWidthX;
+    m_borderWidthY.SetRange(0.0f, 100.0f);
+    m_borderWidthY = m_stss.outlineWidthY;
+    // the shadow is offset by these, negative ones place it up or left
+    m_shadowDepthX.SetRange(-100.0f, 100.0f);
+    m_shadowDepthX = m_stss.shadowDepthX;
+    m_shadowDepthY.SetRange(-100.0f, 100.0f);
+    m_shadowDepthY = m_stss.shadowDepthY;
+
+    m_blur.SetRange(0.0f, 100.0f);
+    m_blur = m_stss.fGaussianBlur;
+    m_edgeBlur = std::clamp(m_stss.fBlur, 0, 100);
+    m_edgeBlurSpin.SetRange32(0, 100);
+    m_shearX.SetRange(-10.0f, 10.0f);
+    m_shearX = m_stss.fontShiftX;
+    m_shearY.SetRange(-10.0f, 10.0f);
+    m_shearY = m_stss.fontShiftY;
 
     m_screenAlignment = m_stss.scrAlignment - 1;
     m_margin = m_stss.marginRect;
@@ -255,12 +289,20 @@ BOOL CPPageSubStyle::OnApply()
 #endif
     m_stss.fontSpacing = m_spacing;
     m_stss.fontAngleZ = m_angle;
+    m_stss.fontAngleX = m_angleX;
+    m_stss.fontAngleY = m_angleY;
     m_stss.fontScaleX = m_scalex;
     m_stss.fontScaleY = m_scaley;
+    m_stss.fontShiftX = m_shearX;
+    m_stss.fontShiftY = m_shearY;
 
     m_stss.borderStyle = m_borderStyle;
-    m_stss.outlineWidthX = m_stss.outlineWidthY = m_borderWidth;
-    m_stss.shadowDepthX = m_stss.shadowDepthY = m_shadowDepth;
+    m_stss.outlineWidthX = m_borderWidthX;
+    m_stss.outlineWidthY = m_borderWidthY;
+    m_stss.shadowDepthX = m_shadowDepthX;
+    m_stss.shadowDepthY = m_shadowDepthY;
+    m_stss.fGaussianBlur = m_blur;
+    m_stss.fBlur = std::clamp(m_edgeBlur, 0, 100);
 
     m_stss.scrAlignment = m_screenAlignment + 1;
     m_stss.marginRect = m_margin;
@@ -297,8 +339,17 @@ void CPPageSubStyle::OnChooseFont()
     }
     BYTE prev_charset = lf.lfCharSet;
 
-    CFontDialog dlg(&lf, CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST | CF_SCALABLEONLY);
+    // the effects add underline and strikeout, and a text color: the primary color
+    const COLORREF primary = m_stss.colors[0];
+    CFontDialog dlg(&lf, CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST | CF_SCALABLEONLY | CF_EFFECTS);
+    dlg.m_cf.rgbColors = primary;
     if (dlg.DoModal() == IDOK) {
+        // its list has 16 colors; one not listed is kept unless another is picked
+        if (dlg.GetColor() != primary) {
+            m_stss.colors[0] = dlg.GetColor();
+            m_color[0].SetColor(m_stss.colors[0]);
+        }
+
         CString str(lf.lfFaceName);
         if (str.GetLength() > 16) {
             str = str.Left(14) + _T("...");
@@ -392,6 +443,10 @@ void CPPageSubStyle::AdjustDynamicWidgets() {
     AdjustDynamicWidgetPair(this, IDC_STATIC8, IDC_EDIT8);
     AdjustDynamicWidgetPair(this, IDC_STATIC9, IDC_EDIT9);
     AdjustDynamicWidgetPair(this, IDC_STATIC10, IDC_EDIT10);
+    AdjustDynamicWidgetGroup(this, { { IDC_STATIC_BLUR, IDC_EDIT_BLUR }, { IDC_STATIC_ANGLEX, IDC_EDIT_ANGLEX },
+                                     { IDC_STATIC_SHEARX, IDC_EDIT_SHEARX } });
+    AdjustDynamicWidgetGroup(this, { { IDC_STATIC_EDGEBLUR, IDC_EDIT_EDGEBLUR }, { IDC_STATIC_ANGLEY, IDC_EDIT_ANGLEY },
+                                     { IDC_STATIC_SHEARY, IDC_EDIT_SHEARY } });
 }
 
 

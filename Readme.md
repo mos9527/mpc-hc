@@ -10,7 +10,7 @@ Builds are available from [nightly](https://nightly.link/mos9527/mpc-hc/workflow
 ## Additional Features
 
 - GitHub CI builds
-- `.lrc` (embedded or external) lyrics support in Audio-only view, rendered via Internal Subtitle Renderer. 
+- `.lrc` (embedded or external) lyrics support in Audio-only view, rendered via Internal Subtitle Renderer with expanded style settings.
 - `Floating` (shortcut: <kbd>5</kbd>, to enable and cycle) view preset for Audio-only view with multiple modes
 
 <img width="1251" height="195" alt="Snipaste_2026-11-05_18-54-27" src="https://github.com/user-attachments/assets/0b579dd1-33c0-4626-9892-57b7c0c30aec" />

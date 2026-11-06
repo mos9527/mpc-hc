@@ -52,8 +52,14 @@ private:
     CMPCThemeSpinButtonCtrl m_scaleySpin;
     int m_borderStyle;
     BOOL m_bRoundedOpaqueBox;
-    CMPCThemeFloatEdit m_borderWidth;
-    CMPCThemeFloatEdit m_shadowDepth;
+    CMPCThemeFloatEdit m_borderWidthX, m_borderWidthY;
+    CMPCThemeFloatEdit m_shadowDepthX, m_shadowDepthY; // negative: up/left
+    CMPCThemeFloatEdit m_blur;                         // \blur
+    int m_edgeBlur;                                    // \be passes
+    CMPCThemeSpinButtonCtrl m_edgeBlurSpin;
+    int m_angleX, m_angleY;
+    CMPCThemeSpinButtonCtrl m_angleXSpin, m_angleYSpin;
+    CMPCThemeFloatEdit m_shearX, m_shearY;
     int m_screenAlignment;
     CRect m_margin;
     CMPCThemeSpinButtonCtrl m_marginLeftSpin;

@@ -3847,7 +3847,8 @@ LOGFONTW& operator <<= (LOGFONTW& lfw, const STSStyle& s)
 
 CString& operator <<= (CString& style, const STSStyle& s)
 {
-    style.Format(_T("%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;0x%06lx;0x%06lx;0x%06lx;0x%06lx;0x%02x;0x%02x;0x%02x;0x%02x;%d;%s;%f;%f;%f;%f;%ld;%d;%d;%d;%d;%f;%f;%f;%f;%d"),
+    // fields are only ever appended, so older versions still read the ones they know
+    style.Format(_T("%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;0x%06lx;0x%06lx;0x%06lx;0x%06lx;0x%02x;0x%02x;0x%02x;0x%02x;%d;%s;%f;%f;%f;%f;%ld;%d;%d;%d;%d;%f;%f;%f;%f;%d;%f;%f"),
                  s.marginRect.left, s.marginRect.right, s.marginRect.top, s.marginRect.bottom,
                  s.scrAlignment, s.borderStyle,
                  s.outlineWidthX, s.outlineWidthY, s.shadowDepthX, s.shadowDepthY,
@@ -3859,7 +3860,8 @@ CString& operator <<= (CString& style, const STSStyle& s)
                  s.fontSpacing, s.fontWeight,
                  s.fItalic, s.fUnderline, s.fStrikeOut, s.fBlur, s.fGaussianBlur,
                  s.fontAngleZ, s.fontAngleX, s.fontAngleY,
-                 s.relativeTo);
+                 s.relativeTo,
+                 s.fontShiftX, s.fontShiftY);
 
     return style;
 }
@@ -3904,7 +3906,14 @@ STSStyle& operator <<= (STSStyle& s, const CString& style)
             s.fontAngleZ = GetFloat(pszBuff, nBuffLength, L';');
             s.fontAngleX = GetFloat(pszBuff, nBuffLength, L';');
             s.fontAngleY = GetFloat(pszBuff, nBuffLength, L';');
+            // reading the last field leaves the buffer at it, any other moves it past its separator
+            LPCWSTR pszRelativeTo = pszBuff;
             s.relativeTo = (STSStyle::RelativeTo)GetInt(pszBuff, nBuffLength, L';');
+            // added later, missing from older settings: keep the defaults
+            if (pszBuff != pszRelativeTo && nBuffLength > 0) {
+                s.fontShiftX = GetFloat(pszBuff, nBuffLength, L';');
+                s.fontShiftY = GetFloat(pszBuff, nBuffLength, L';');
+            }
         }
     } catch (...) {
         s.SetDefault();

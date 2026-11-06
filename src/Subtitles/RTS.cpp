@@ -208,7 +208,7 @@ void CWord::Paint(const CPoint& p, const CPoint& org)
     if (m_renderingCaches.overlayCache.Lookup(overlayKey, m_pOverlayData)) {
         m_fDrawn = m_renderingCaches.outlineCache.Lookup(overlayKey, m_pOutlineData);
         if (m_style.borderStyle == 1) {
-            if (m_style.outlineWidthX > 0.0 || m_style.shadowDepthX > 0.0 || m_style.outlineWidthY > 0.0 || m_style.shadowDepthY > 0.0) {
+            if (m_style.outlineWidthX > 0.0 || m_style.shadowDepthX != 0.0 || m_style.outlineWidthY > 0.0 || m_style.shadowDepthY != 0.0) {
                 VERIFY(CreateOpaqueBox());
             }
         }
@@ -216,7 +216,7 @@ void CWord::Paint(const CPoint& p, const CPoint& org)
         if (!m_fDrawn) {
             if (m_renderingCaches.outlineCache.Lookup(overlayKey, m_pOutlineData)) {
                 if (m_style.borderStyle == 1) {
-                    if (m_style.outlineWidthX > 0.0 || m_style.shadowDepthX > 0.0 || m_style.outlineWidthY > 0.0 || m_style.shadowDepthY > 0.0) {
+                    if (m_style.outlineWidthX > 0.0 || m_style.shadowDepthX != 0.0 || m_style.outlineWidthY > 0.0 || m_style.shadowDepthY != 0.0) {
                         VERIFY(CreateOpaqueBox());
                     }
                 }
@@ -248,7 +248,7 @@ void CWord::Paint(const CPoint& p, const CPoint& org)
                         return;
                     }
                 } else if (m_style.borderStyle == 1) {
-                    if (m_style.outlineWidthX > 0.0 || m_style.shadowDepthX > 0.0 || m_style.outlineWidthY > 0.0 || m_style.shadowDepthY > 0.0) {
+                    if (m_style.outlineWidthX > 0.0 || m_style.shadowDepthX != 0.0 || m_style.outlineWidthY > 0.0 || m_style.shadowDepthY != 0.0) {
                         VERIFY(CreateOpaqueBox());
                     }
                 }
@@ -849,7 +849,7 @@ static bool HaveSameBGStyle(const STSStyle& s1, STSStyle s2)
 static bool HasOpaqueBox(const STSStyle& style)
 {
     return style.borderStyle == 1
-           && (style.outlineWidthX > 0.0 || style.shadowDepthX > 0.0 || style.outlineWidthY > 0.0 || style.shadowDepthY > 0.0);
+           && (style.outlineWidthX > 0.0 || style.shadowDepthX != 0.0 || style.outlineWidthY > 0.0 || style.shadowDepthY != 0.0);
 }
 
 // Corner radius of the rounded opaque box, a third of the line height
@@ -934,8 +934,8 @@ CRect CLineBG::PaintLineShadow(SubPicDesc& spd, CRect& clipRect, BYTE* pAlphaMas
     CRect bbox(0, 0, 0, 0);
 
     if (m_style.shadowDepthX != 0 || m_style.shadowDepthY != 0) {
-        int x = p.x + (int)(m_style.shadowDepthX + 0.5);
-        int y = p.y + m_ascent - m_ascent + (int)(m_style.shadowDepthY + 0.5);
+        int x = p.x + (int)std::lround(m_style.shadowDepthX);
+        int y = p.y + m_ascent - m_ascent + (int)std::lround(m_style.shadowDepthY);
 
         DWORD a = 0xff - m_style.alpha[3];
         if (alpha > 0) {
@@ -1152,8 +1152,8 @@ CRect CSubtitleBG::PaintShadow(SubPicDesc& spd, CRect& clipRect, BYTE* pAlphaMas
     CRect bbox(0, 0, 0, 0);
 
     if (m_style.shadowDepthX != 0 || m_style.shadowDepthY != 0) {
-        int x = p.x + (int)(m_style.shadowDepthX + 0.5);
-        int y = p.y + (int)(m_style.shadowDepthY + 0.5);
+        int x = p.x + (int)std::lround(m_style.shadowDepthX);
+        int y = p.y + (int)std::lround(m_style.shadowDepthY);
 
         DWORD a = 0xff - m_style.alpha[3];
         if (alpha > 0) {
@@ -1714,8 +1714,8 @@ CRect CLine::PaintShadow(SubPicDesc& spd, CRect& clipRect, BYTE* pAlphaMask, CPo
         }
 
         if (w->m_style.shadowDepthX != 0 || w->m_style.shadowDepthY != 0) {
-            int x = p.x + (int)(w->m_style.shadowDepthX + 0.5);
-            int y = p.y + m_ascent - w->m_ascent + (int)(w->m_style.shadowDepthY + 0.5);
+            int x = p.x + (int)std::lround(w->m_style.shadowDepthX);
+            int y = p.y + m_ascent - w->m_ascent + (int)std::lround(w->m_style.shadowDepthY);
 
             DWORD a = 0xff - w->m_style.alpha[3];
             if (alpha > 0) {

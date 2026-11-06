@@ -775,6 +775,23 @@
 #define IDC_MODERNSEEKBARHEIGHT_SPIN    22093
 #define IDC_COLOR_CONTROLS              22103
 #define IDC_CHECK_ROUNDEDBOX            22104
+#define IDC_EDIT_OUTLINEY               22105
+#define IDC_EDIT_SHADOWY                22106
+#define IDC_STATIC_BLUR                 22107
+#define IDC_EDIT_BLUR                   22108
+#define IDC_STATIC_EDGEBLUR             22109
+#define IDC_EDIT_EDGEBLUR               22110
+#define IDC_SPIN_EDGEBLUR               22111
+#define IDC_STATIC_ANGLEX               22112
+#define IDC_EDIT_ANGLEX                 22113
+#define IDC_SPIN_ANGLEX                 22114
+#define IDC_STATIC_ANGLEY               22115
+#define IDC_EDIT_ANGLEY                 22116
+#define IDC_SPIN_ANGLEY                 22117
+#define IDC_STATIC_SHEARX               22118
+#define IDC_EDIT_SHEARX                 22119
+#define IDC_STATIC_SHEARY               22120
+#define IDC_EDIT_SHEARY                 22121
 #define ID_SUB_DELAY_DOWN               24000
 #define ID_SUB_DELAY_UP                 24001
 #define IDS_MPLAYERC_104                24002
@@ -1916,7 +1933,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        20079
 #define _APS_NEXT_COMMAND_VALUE         33467
-#define _APS_NEXT_CONTROL_VALUE         22105
+#define _APS_NEXT_CONTROL_VALUE         22122
 #define _APS_NEXT_SYMED_VALUE           24052
 #endif
 #endif

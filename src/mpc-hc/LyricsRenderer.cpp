@@ -159,11 +159,13 @@ void CLyricsRenderer::Build(const Lyrics& lyrics)
         style.fGaussianBlur *= scaleY;
     }
 
-    // Half the font size between the lines, plus what their borders and shadow take
+    // Half the font size between the lines, plus what their borders and shadow take:
+    // the borders of both lines, and the shadow of the upper one going down or of the lower one going up
     const double fontPx = style.fontSize * st.fontScale * style.fontScaleY / 100.0;
     const double outline = std::max(style.outlineWidthY, 0.0);
-    const double reach = outline + std::abs(style.shadowDepthY) + 3 * std::max(style.fGaussianBlur, 0.0);
-    m_lineGap = std::max(1, int(std::lround(fontPx / 2 + 2 * outline + std::max(0.0, style.shadowDepthY))));
+    const double shadow = std::abs(style.shadowDepthY);
+    const double reach = outline + shadow + 3 * std::max(style.fGaussianBlur, 0.0);
+    m_lineGap = std::max(1, int(std::lround(fontPx / 2 + 2 * outline + shadow)));
 
     // Panel lines are rendered with room around their box for borders, shadow and blur,
     // and room for a line wrapped many times
