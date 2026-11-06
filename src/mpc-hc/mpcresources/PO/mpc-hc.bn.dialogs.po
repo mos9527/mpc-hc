@@ -939,6 +939,10 @@ msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON1"
 msgid "Font"
 msgstr "ফন্ট"
 
+msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON_TATEGAKIFONT"
+msgid "Tategaki"
+msgstr "Tategaki"
+
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC1"
 msgid "Spacing"
 msgstr "বর্ণমধ্যবর্তী ফাঁক"
@@ -972,12 +976,12 @@ msgid "Rounded corners"
 msgstr ""
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC5"
-msgid "Width"
-msgstr "বর্ডারের ব্যাস"
+msgid "Width (x,y)"
+msgstr "বর্ডারের ব্যাস (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC6"
-msgid "Shadow"
-msgstr "ছায়ার গভীরতা"
+msgid "Shadow (x,y)"
+msgstr "ছায়ার গভীরতা (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
 msgid "Screen Alignment && Margins"
@@ -1034,6 +1038,34 @@ msgstr "ছায়ার গভীরতা"
 msgctxt "IDD_PPAGESUBSTYLE_IDC_CHECK1"
 msgid "Link alpha channels"
 msgstr "সবগুলোর অস্বচ্ছতা একইমাত্রায় পরিবর্তন"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
+msgid "Blur && Transform"
+msgstr "ব্লার && রূপান্তর"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_BLUR"
+msgid "Blur"
+msgstr "ব্লার"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_EDGEBLUR"
+msgid "Edge blur"
+msgstr "প্রান্ত ব্লার"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEX"
+msgid "Angle (x,°)"
+msgstr "কৌণিকচ্যুতি (x,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEY"
+msgid "Angle (y,°)"
+msgstr "কৌণিকচ্যুতি (y,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARX"
+msgid "Shear (x)"
+msgstr "শিয়ার (x)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARY"
+msgid "Shear (y)"
+msgstr "শিয়ার (y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC21"
 msgid "8-bit Character Set"

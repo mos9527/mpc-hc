@@ -5239,13 +5239,13 @@ msgstr ""
 
 msgctxt "IDS_PPAGEADVANCED_HISTORY_IN_APPDATA"
 msgid ""
-"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom instead "
-"of the player folder, when settings are stored in an INI file. This also "
-"happens automatically when the player folder is not writable. Requires "
+"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom "
+"instead of the player folder, when settings are stored in an INI file. This "
+"also happens automatically when the player folder is not writable. Requires "
 "restart."
 msgstr ""
-"설정이 INI 파일에 저장되는 경우, 기록 파일과 저장된 재생 목록을 재생기 폴더 대신 %APPDATA%\\MPC-HC Custom에 저장합니다. "
-"재생기 폴더에 쓰기 권한이 없는 경우에도 이 동작이 자동으로 수행됩니다. 적용하려면 프로그램을 다시 시작해야 합니다."
+"설정이 INI 파일에 저장되는 경우, 기록 파일과 저장된 재생 목록을 재생기 폴더 대신 %APPDATA%\\MPC-HC Custom에 "
+"저장합니다. 재생기 폴더에 쓰기 권한이 없는 경우에도 이 동작이 자동으로 수행됩니다. 적용하려면 프로그램을 다시 시작해야 합니다."
 
 msgctxt "IDS_PPAGEADVANCED_HISTORY_EXCLUDE_FILTER"
 msgid ""
@@ -5294,6 +5294,63 @@ msgstr "플로팅 보기"
 msgctxt "IDS_AG_TOGGLE_COVERART"
 msgid "Toggle Cover Art"
 msgstr "커버 아트 표시"
+
+msgctxt "IDS_LYRICS_PANEL"
+msgid "Lyrics &Panel"
+msgstr "가사 패널(&P)"
+
+msgctxt "IDS_LYRICS_SUBTITLES"
+msgid "Lyrics as &Subtitles"
+msgstr "가사를 자막으로(&S)"
+
+msgctxt "IDS_LYRICS_HIDE"
+msgid "&Hide Lyrics"
+msgstr "가사 숨기기(&H)"
+
+msgctxt "IDS_LYRICS_TATEGAKI"
+msgid "&Tategaki"
+msgstr "세로쓰기(&T)"
+
+msgctxt "IDS_OSD_LYRICS_PANEL"
+msgid "Lyrics: panel"
+msgstr "가사: 패널"
+
+msgctxt "IDS_OSD_LYRICS_SUBTITLES"
+msgid "Lyrics: as subtitles"
+msgstr "가사: 자막으로"
+
+msgctxt "IDS_OSD_LYRICS_HIDDEN"
+msgid "Lyrics: hidden"
+msgstr "가사: 숨김"
+
+msgctxt "IDS_OSD_LYRICS_TATEGAKI"
+msgid "Lyrics: tategaki"
+msgstr "가사: 세로쓰기"
+
+msgctxt "IDS_OSD_LYRICS_HORIZONTAL"
+msgid "Lyrics: horizontal"
+msgstr "가사: 가로쓰기"
+
+msgctxt "IDS_OSD_COVERART_SHOWN"
+msgid "Cover art: shown"
+msgstr "커버 아트: 표시"
+
+msgctxt "IDS_OSD_COVERART_HIDDEN"
+msgid "Cover art: hidden"
+msgstr "커버 아트: 숨김"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT"
+msgid "Tategaki: @%s, %g"
+msgstr "세로쓰기: @%s, %g"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT_TIP"
+msgid ""
+"Font of the lyrics shown in tategaki (vertical writing), in its vertical "
+"\"@\" form; the rest of the style is shared. Pick the same font as Font to "
+"follow it."
+msgstr ""
+"세로쓰기(縦書き)로 표시되는 가사의 글꼴이며, 세로용 \"@\" 형태로 사용됩니다. 나머지 스타일은 공유됩니다. \"글꼴\"과 같은 "
+"글꼴을 선택하면 그 글꼴을 따릅니다."
 
 msgctxt "IDS_AUDIO_BOOST_WARNING"
 msgid ""

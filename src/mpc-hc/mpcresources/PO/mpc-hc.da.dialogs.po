@@ -940,6 +940,10 @@ msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON1"
 msgid "Font"
 msgstr "Skrifttype"
 
+msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON_TATEGAKIFONT"
+msgid "Tategaki"
+msgstr "Tategaki"
+
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC1"
 msgid "Spacing"
 msgstr "Mellemrum"
@@ -973,12 +977,12 @@ msgid "Rounded corners"
 msgstr ""
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC5"
-msgid "Width"
-msgstr "Bredde"
+msgid "Width (x,y)"
+msgstr "Bredde (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC6"
-msgid "Shadow"
-msgstr "Skygge"
+msgid "Shadow (x,y)"
+msgstr "Skygge (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
 msgid "Screen Alignment && Margins"
@@ -1035,6 +1039,34 @@ msgstr "Skygge"
 msgctxt "IDD_PPAGESUBSTYLE_IDC_CHECK1"
 msgid "Link alpha channels"
 msgstr "Lås gennemsigtighed"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
+msgid "Blur && Transform"
+msgstr "Sløring && transformation"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_BLUR"
+msgid "Blur"
+msgstr "Sløring"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_EDGEBLUR"
+msgid "Edge blur"
+msgstr "Kantsløring"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEX"
+msgid "Angle (x,°)"
+msgstr "Vinkel (x,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEY"
+msgid "Angle (y,°)"
+msgstr "Vinkel (y,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARX"
+msgid "Shear (x)"
+msgstr "Forskydning (x)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARY"
+msgid "Shear (y)"
+msgstr "Forskydning (y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC21"
 msgid "8-bit Character Set"

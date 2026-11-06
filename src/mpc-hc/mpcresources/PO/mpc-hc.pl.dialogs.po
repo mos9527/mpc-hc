@@ -945,6 +945,10 @@ msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON1"
 msgid "Font"
 msgstr "Czcionka"
 
+msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON_TATEGAKIFONT"
+msgid "Tategaki"
+msgstr "Tategaki"
+
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC1"
 msgid "Spacing"
 msgstr "Odstępy"
@@ -978,12 +982,12 @@ msgid "Rounded corners"
 msgstr ""
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC5"
-msgid "Width"
-msgstr "Szerokość"
+msgid "Width (x,y)"
+msgstr "Szerokość (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC6"
-msgid "Shadow"
-msgstr "Cień"
+msgid "Shadow (x,y)"
+msgstr "Cień (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
 msgid "Screen Alignment && Margins"
@@ -1040,6 +1044,34 @@ msgstr "Cień"
 msgctxt "IDD_PPAGESUBSTYLE_IDC_CHECK1"
 msgid "Link alpha channels"
 msgstr "Połącz kanały alfa"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
+msgid "Blur && Transform"
+msgstr "Rozmycie && przekształcenie"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_BLUR"
+msgid "Blur"
+msgstr "Rozmycie"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_EDGEBLUR"
+msgid "Edge blur"
+msgstr "Rozmycie krawędzi"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEX"
+msgid "Angle (x,°)"
+msgstr "Kąt (x,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEY"
+msgid "Angle (y,°)"
+msgstr "Kąt (y,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARX"
+msgid "Shear (x)"
+msgstr "Pochylenie (x)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARY"
+msgid "Shear (y)"
+msgstr "Pochylenie (y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC21"
 msgid "8-bit Character Set"

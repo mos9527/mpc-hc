@@ -939,6 +939,10 @@ msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON1"
 msgid "Font"
 msgstr "الخط"
 
+msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON_TATEGAKIFONT"
+msgid "Tategaki"
+msgstr "Tategaki"
+
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC1"
 msgid "Spacing"
 msgstr "الفواصل"
@@ -972,12 +976,12 @@ msgid "Rounded corners"
 msgstr ""
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC5"
-msgid "Width"
-msgstr "العرض"
+msgid "Width (x,y)"
+msgstr "العرض (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC6"
-msgid "Shadow"
-msgstr "الظل"
+msgid "Shadow (x,y)"
+msgstr "الظل (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
 msgid "Screen Alignment && Margins"
@@ -1034,6 +1038,34 @@ msgstr "التظليل"
 msgctxt "IDD_PPAGESUBSTYLE_IDC_CHECK1"
 msgid "Link alpha channels"
 msgstr "ربط قنوات الألفا"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
+msgid "Blur && Transform"
+msgstr "التمويه && التحويل"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_BLUR"
+msgid "Blur"
+msgstr "التمويه"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_EDGEBLUR"
+msgid "Edge blur"
+msgstr "تمويه الحواف"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEX"
+msgid "Angle (x,°)"
+msgstr "الزاوية (°,x)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEY"
+msgid "Angle (y,°)"
+msgstr "الزاوية (°,y)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARX"
+msgid "Shear (x)"
+msgstr "الإمالة (x)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARY"
+msgid "Shear (y)"
+msgstr "الإمالة (y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC21"
 msgid "8-bit Character Set"

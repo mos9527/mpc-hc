@@ -951,6 +951,10 @@ msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON1"
 msgid "Font"
 msgstr "Tipus de lletra"
 
+msgctxt "IDD_PPAGESUBSTYLE_IDC_BUTTON_TATEGAKIFONT"
+msgid "Tategaki"
+msgstr "Tategaki"
+
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC1"
 msgid "Spacing"
 msgstr "Espaiat"
@@ -984,12 +988,12 @@ msgid "Rounded corners"
 msgstr ""
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC5"
-msgid "Width"
-msgstr "Amplada"
+msgid "Width (x,y)"
+msgstr "Amplada (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC6"
-msgid "Shadow"
-msgstr "Ombra"
+msgid "Shadow (x,y)"
+msgstr "Ombra (x,y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
 msgid "Screen Alignment && Margins"
@@ -1046,6 +1050,34 @@ msgstr "Ombra"
 msgctxt "IDD_PPAGESUBSTYLE_IDC_CHECK1"
 msgid "Link alpha channels"
 msgstr "Vincula els canals alfa"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC"
+msgid "Blur && Transform"
+msgstr "Desenfocament && transformació"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_BLUR"
+msgid "Blur"
+msgstr "Desenfocament"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_EDGEBLUR"
+msgid "Edge blur"
+msgstr "Desenfocament de vores"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEX"
+msgid "Angle (x,°)"
+msgstr "Angle (x,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_ANGLEY"
+msgid "Angle (y,°)"
+msgstr "Angle (y,°)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARX"
+msgid "Shear (x)"
+msgstr "Inclinació (x)"
+
+msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC_SHEARY"
+msgid "Shear (y)"
+msgstr "Inclinació (y)"
 
 msgctxt "IDD_PPAGESUBSTYLE_IDC_STATIC21"
 msgid "8-bit Character Set"

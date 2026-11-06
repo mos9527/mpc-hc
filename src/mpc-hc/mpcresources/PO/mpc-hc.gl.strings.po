@@ -5224,9 +5224,9 @@ msgstr ""
 
 msgctxt "IDS_PPAGEADVANCED_HISTORY_IN_APPDATA"
 msgid ""
-"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom instead "
-"of the player folder, when settings are stored in an INI file. This also "
-"happens automatically when the player folder is not writable. Requires "
+"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom "
+"instead of the player folder, when settings are stored in an INI file. This "
+"also happens automatically when the player folder is not writable. Requires "
 "restart."
 msgstr ""
 
@@ -5275,6 +5275,64 @@ msgstr "Modo Flotante"
 msgctxt "IDS_AG_TOGGLE_COVERART"
 msgid "Toggle Cover Art"
 msgstr "Amosar Portada"
+
+msgctxt "IDS_LYRICS_PANEL"
+msgid "Lyrics &Panel"
+msgstr "&Panel de letras"
+
+msgctxt "IDS_LYRICS_SUBTITLES"
+msgid "Lyrics as &Subtitles"
+msgstr "Letras como &subtítulos"
+
+msgctxt "IDS_LYRICS_HIDE"
+msgid "&Hide Lyrics"
+msgstr "&Agochar letras"
+
+msgctxt "IDS_LYRICS_TATEGAKI"
+msgid "&Tategaki"
+msgstr "&Tategaki"
+
+msgctxt "IDS_OSD_LYRICS_PANEL"
+msgid "Lyrics: panel"
+msgstr "Letras: panel"
+
+msgctxt "IDS_OSD_LYRICS_SUBTITLES"
+msgid "Lyrics: as subtitles"
+msgstr "Letras: como subtítulos"
+
+msgctxt "IDS_OSD_LYRICS_HIDDEN"
+msgid "Lyrics: hidden"
+msgstr "Letras: agochadas"
+
+msgctxt "IDS_OSD_LYRICS_TATEGAKI"
+msgid "Lyrics: tategaki"
+msgstr "Letras: tategaki"
+
+msgctxt "IDS_OSD_LYRICS_HORIZONTAL"
+msgid "Lyrics: horizontal"
+msgstr "Letras: horizontais"
+
+msgctxt "IDS_OSD_COVERART_SHOWN"
+msgid "Cover art: shown"
+msgstr "Portada: amosada"
+
+msgctxt "IDS_OSD_COVERART_HIDDEN"
+msgid "Cover art: hidden"
+msgstr "Portada: agochada"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT"
+msgid "Tategaki: @%s, %g"
+msgstr "Tategaki: @%s, %g"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT_TIP"
+msgid ""
+"Font of the lyrics shown in tategaki (vertical writing), in its vertical "
+"\"@\" form; the rest of the style is shared. Pick the same font as Font to "
+"follow it."
+msgstr ""
+"Fonte das letras amosadas en tategaki (escritura vertical), na súa forma "
+"vertical «@»; o resto do estilo é compartido. Escolla a mesma fonte ca en "
+"«Fonte» para seguila."
 
 msgctxt "IDS_AUDIO_BOOST_WARNING"
 msgid ""

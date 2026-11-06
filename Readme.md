@@ -10,10 +10,12 @@ Builds are available from [nightly](https://nightly.link/mos9527/mpc-hc/workflow
 ## Additional Features
 
 - GitHub CI builds
-- `.lrc` (embedded or external) lyrics support in Audio-only view, rendered via Internal Subtitle Renderer with expanded style settings.
+- `.lrc` (embedded or external) lyrics support in Audio-only view, rendered via Internal Subtitle Renderer with expanded style settings. Shown as a panel or as subtitles, either optionally in tategaki (vertical writing, with its own font option).
 - `Floating` (shortcut: <kbd>5</kbd>, to enable and cycle) view preset for Audio-only view with multiple modes
 
-<img width="1251" height="195" alt="Snipaste_2026-11-05_18-54-27" src="https://github.com/user-attachments/assets/0b579dd1-33c0-4626-9892-57b7c0c30aec" />
+![](https://github.com/user-attachments/assets/80b2aee4-1504-4e7b-b055-975c00b50ddf)
+
+*Demo: Lyrics as Subtitles mode Tategaki/縦書き/竖排 script enabled, 0.33 Shear(x), 75% opacity with @MingLiU-ExtB font, 24 pts in Floating (transparent) mode* 
 
 Please refer to the [original README](https://github.com/clsid2/mpc-hc) for more info.
 

@@ -5173,9 +5173,9 @@ msgstr ""
 
 msgctxt "IDS_PPAGEADVANCED_HISTORY_IN_APPDATA"
 msgid ""
-"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom instead "
-"of the player folder, when settings are stored in an INI file. This also "
-"happens automatically when the player folder is not writable. Requires "
+"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom "
+"instead of the player folder, when settings are stored in an INI file. This "
+"also happens automatically when the player folder is not writable. Requires "
 "restart."
 msgstr ""
 
@@ -5224,6 +5224,64 @@ msgstr "Vaizdas plaukiojantis"
 msgctxt "IDS_AG_TOGGLE_COVERART"
 msgid "Toggle Cover Art"
 msgstr "Įj./Išj. viršelį"
+
+msgctxt "IDS_LYRICS_PANEL"
+msgid "Lyrics &Panel"
+msgstr "&Dainos žodžių skydelis"
+
+msgctxt "IDS_LYRICS_SUBTITLES"
+msgid "Lyrics as &Subtitles"
+msgstr "Dainos žodžiai kaip &subtitrai"
+
+msgctxt "IDS_LYRICS_HIDE"
+msgid "&Hide Lyrics"
+msgstr "S&lėpti dainos žodžius"
+
+msgctxt "IDS_LYRICS_TATEGAKI"
+msgid "&Tategaki"
+msgstr "&Tategaki"
+
+msgctxt "IDS_OSD_LYRICS_PANEL"
+msgid "Lyrics: panel"
+msgstr "Dainos žodžiai: skydelis"
+
+msgctxt "IDS_OSD_LYRICS_SUBTITLES"
+msgid "Lyrics: as subtitles"
+msgstr "Dainos žodžiai: kaip subtitrai"
+
+msgctxt "IDS_OSD_LYRICS_HIDDEN"
+msgid "Lyrics: hidden"
+msgstr "Dainos žodžiai: paslėpti"
+
+msgctxt "IDS_OSD_LYRICS_TATEGAKI"
+msgid "Lyrics: tategaki"
+msgstr "Dainos žodžiai: tategaki"
+
+msgctxt "IDS_OSD_LYRICS_HORIZONTAL"
+msgid "Lyrics: horizontal"
+msgstr "Dainos žodžiai: horizontaliai"
+
+msgctxt "IDS_OSD_COVERART_SHOWN"
+msgid "Cover art: shown"
+msgstr "Viršelis: rodomas"
+
+msgctxt "IDS_OSD_COVERART_HIDDEN"
+msgid "Cover art: hidden"
+msgstr "Viršelis: paslėptas"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT"
+msgid "Tategaki: @%s, %g"
+msgstr "Tategaki: @%s, %g"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT_TIP"
+msgid ""
+"Font of the lyrics shown in tategaki (vertical writing), in its vertical "
+"\"@\" form; the rest of the style is shared. Pick the same font as Font to "
+"follow it."
+msgstr ""
+"Dainos žodžių, rodomų tategaki (vertikaliu raštu), šriftas, jo vertikalia "
+"„@“ forma; likusi stiliaus dalis bendra. Pasirinkite tą patį šriftą kaip "
+"„Šriftas“, kad būtų sekama juo."
 
 msgctxt "IDS_AUDIO_BOOST_WARNING"
 msgid ""

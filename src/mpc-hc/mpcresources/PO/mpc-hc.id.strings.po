@@ -5273,9 +5273,9 @@ msgstr ""
 
 msgctxt "IDS_PPAGEADVANCED_HISTORY_IN_APPDATA"
 msgid ""
-"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom instead "
-"of the player folder, when settings are stored in an INI file. This also "
-"happens automatically when the player folder is not writable. Requires "
+"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom "
+"instead of the player folder, when settings are stored in an INI file. This "
+"also happens automatically when the player folder is not writable. Requires "
 "restart."
 msgstr ""
 
@@ -5324,6 +5324,64 @@ msgstr "Tilikan Mengambang"
 msgctxt "IDS_AG_TOGGLE_COVERART"
 msgid "Toggle Cover Art"
 msgstr "Jungkit Kover Album"
+
+msgctxt "IDS_LYRICS_PANEL"
+msgid "Lyrics &Panel"
+msgstr "&Panel Lirik"
+
+msgctxt "IDS_LYRICS_SUBTITLES"
+msgid "Lyrics as &Subtitles"
+msgstr "Lirik sebagai &Subtitle"
+
+msgctxt "IDS_LYRICS_HIDE"
+msgid "&Hide Lyrics"
+msgstr "Se&mbunyikan Lirik"
+
+msgctxt "IDS_LYRICS_TATEGAKI"
+msgid "&Tategaki"
+msgstr "&Tategaki"
+
+msgctxt "IDS_OSD_LYRICS_PANEL"
+msgid "Lyrics: panel"
+msgstr "Lirik: panel"
+
+msgctxt "IDS_OSD_LYRICS_SUBTITLES"
+msgid "Lyrics: as subtitles"
+msgstr "Lirik: sebagai subtitle"
+
+msgctxt "IDS_OSD_LYRICS_HIDDEN"
+msgid "Lyrics: hidden"
+msgstr "Lirik: disembunyikan"
+
+msgctxt "IDS_OSD_LYRICS_TATEGAKI"
+msgid "Lyrics: tategaki"
+msgstr "Lirik: tategaki"
+
+msgctxt "IDS_OSD_LYRICS_HORIZONTAL"
+msgid "Lyrics: horizontal"
+msgstr "Lirik: horizontal"
+
+msgctxt "IDS_OSD_COVERART_SHOWN"
+msgid "Cover art: shown"
+msgstr "Kover album: ditampilkan"
+
+msgctxt "IDS_OSD_COVERART_HIDDEN"
+msgid "Cover art: hidden"
+msgstr "Kover album: disembunyikan"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT"
+msgid "Tategaki: @%s, %g"
+msgstr "Tategaki: @%s, %g"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT_TIP"
+msgid ""
+"Font of the lyrics shown in tategaki (vertical writing), in its vertical "
+"\"@\" form; the rest of the style is shared. Pick the same font as Font to "
+"follow it."
+msgstr ""
+"Fon lirik yang ditampilkan dalam tategaki (tulisan vertikal), dalam bentuk "
+"vertikal \"@\"-nya; sisa gaya digunakan bersama. Pilih fon yang sama dengan "
+"\"Fon\" untuk mengikutinya."
 
 msgctxt "IDS_AUDIO_BOOST_WARNING"
 msgid ""

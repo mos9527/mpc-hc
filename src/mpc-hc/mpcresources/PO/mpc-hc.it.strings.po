@@ -5345,9 +5345,9 @@ msgstr ""
 
 msgctxt "IDS_PPAGEADVANCED_HISTORY_IN_APPDATA"
 msgid ""
-"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom instead "
-"of the player folder, when settings are stored in an INI file. This also "
-"happens automatically when the player folder is not writable. Requires "
+"Store the history file and the saved playlist in %APPDATA%\\MPC-HC Custom "
+"instead of the player folder, when settings are stored in an INI file. This "
+"also happens automatically when the player folder is not writable. Requires "
 "restart."
 msgstr ""
 
@@ -5396,6 +5396,64 @@ msgstr "Vista fluttuante"
 msgctxt "IDS_AG_TOGGLE_COVERART"
 msgid "Toggle Cover Art"
 msgstr "Mostra copertina"
+
+msgctxt "IDS_LYRICS_PANEL"
+msgid "Lyrics &Panel"
+msgstr "&Pannello testi"
+
+msgctxt "IDS_LYRICS_SUBTITLES"
+msgid "Lyrics as &Subtitles"
+msgstr "Testi come &sottotitoli"
+
+msgctxt "IDS_LYRICS_HIDE"
+msgid "&Hide Lyrics"
+msgstr "&Nascondi testi"
+
+msgctxt "IDS_LYRICS_TATEGAKI"
+msgid "&Tategaki"
+msgstr "&Tategaki"
+
+msgctxt "IDS_OSD_LYRICS_PANEL"
+msgid "Lyrics: panel"
+msgstr "Testi: pannello"
+
+msgctxt "IDS_OSD_LYRICS_SUBTITLES"
+msgid "Lyrics: as subtitles"
+msgstr "Testi: come sottotitoli"
+
+msgctxt "IDS_OSD_LYRICS_HIDDEN"
+msgid "Lyrics: hidden"
+msgstr "Testi: nascosti"
+
+msgctxt "IDS_OSD_LYRICS_TATEGAKI"
+msgid "Lyrics: tategaki"
+msgstr "Testi: tategaki"
+
+msgctxt "IDS_OSD_LYRICS_HORIZONTAL"
+msgid "Lyrics: horizontal"
+msgstr "Testi: orizzontali"
+
+msgctxt "IDS_OSD_COVERART_SHOWN"
+msgid "Cover art: shown"
+msgstr "Copertina: visibile"
+
+msgctxt "IDS_OSD_COVERART_HIDDEN"
+msgid "Cover art: hidden"
+msgstr "Copertina: nascosta"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT"
+msgid "Tategaki: @%s, %g"
+msgstr "Tategaki: @%s, %g"
+
+msgctxt "IDS_SUBSTYLE_TATEGAKI_FONT_TIP"
+msgid ""
+"Font of the lyrics shown in tategaki (vertical writing), in its vertical "
+"\"@\" form; the rest of the style is shared. Pick the same font as Font to "
+"follow it."
+msgstr ""
+"Carattere dei testi mostrati in tategaki (scrittura verticale), nella sua "
+"forma verticale \"@\"; il resto dello stile è condiviso. Scegli lo stesso "
+"carattere di \"Carattere\" per seguirlo."
 
 msgctxt "IDS_AUDIO_BOOST_WARNING"
 msgid ""

@@ -842,6 +842,22 @@ public:
     // Default Style
     STSStyle        subtitlesDefStyle;
     bool            bSubtitleRoundedOpaqueBox;
+    // Font of the tategaki lyrics; with no face, the default style's font entirely
+    struct LyricsTategakiFont {
+        CString face;      // without "@"
+        double size = 0.0; // points; 0: the default style's
+        int weight = 0;    // 0: the default style's
+        int italic = -1;   // -1: the default style's
+        bool operator==(const LyricsTategakiFont& f) const {
+            return face == f.face && size == f.size && weight == f.weight && italic == f.italic;
+        }
+        bool operator!=(const LyricsTategakiFont& f) const { return !(*this == f); }
+        // The font set into a style, the face without "@"; nothing when there is no face
+        void ApplyTo(STSStyle& style) const;
+        // "size;weight;italic;face", or a face alone as first saved
+        CString Save() const;
+        void Load(const CString& str);
+    } lyricsTategakiFont;
 
     // Misc
     bool            bPreferDefaultForcedSubtitles;

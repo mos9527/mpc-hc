@@ -609,8 +609,9 @@ STYLE DS_SETFONT | WS_CHILD
 FONT 9, "Segoe UI", 400, 0, 0x1
 BEGIN
     GROUPBOX        "Font",IDC_STATIC,6,6,126,190,WS_TABSTOP
-    PUSHBUTTON      "Font",IDC_BUTTON1,12,20,114,13
-    COMBOBOX        IDC_COMBO1,12,58,114,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Font",IDC_BUTTON1,12,17,114,13
+    PUSHBUTTON      "Tategaki",IDC_BUTTON_TATEGAKIFONT,12,32,114,13
+    COMBOBOX        IDC_COMBO1,12,60,114,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_COMBO2,12,97,114,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Spacing",IDC_STATIC1,12,120,67,8
     EDITTEXT        IDC_EDIT3,84,118,42,13,ES_RIGHT | ES_AUTOHSCROLL
@@ -689,7 +690,7 @@ BEGIN
     EDITTEXT        IDC_EDIT_SHEARX,197,237,42,13,ES_RIGHT | ES_AUTOHSCROLL
     LTEXT           "Shear (y)",IDC_STATIC_SHEARY,247,240,52,8
     EDITTEXT        IDC_EDIT_SHEARY,301,237,42,13,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "8-bit Character Set",IDC_STATIC21,12,46,112,8
+    LTEXT           "8-bit Character Set",IDC_STATIC21,12,50,112,8
     LTEXT           "OpenType Language",IDC_STATIC22,12,86,112,8
     GROUPBOX        "Libass Options",IDC_STATIC_LIBASS,137,260,212,23
     CONTROL         "Use libass for SSA/ASS",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,143,270,165,10
@@ -4351,6 +4352,19 @@ BEGIN
     IDS_PPAGEADVANCED_SUB_GLYPH_CACHE_MB "Subtitle glyph cache limit in MB. The internal subtitle renderer's cache grows up to this limit on scripts that need it."
     IDS_AG_VIEW_FLOATING    "View Floating"
     IDS_AG_TOGGLE_COVERART  "Toggle Cover Art"
+    IDS_LYRICS_PANEL        "Lyrics &Panel"
+    IDS_LYRICS_SUBTITLES    "Lyrics as &Subtitles"
+    IDS_LYRICS_HIDE         "&Hide Lyrics"
+    IDS_LYRICS_TATEGAKI     "&Tategaki"
+    IDS_OSD_LYRICS_PANEL    "Lyrics: panel"
+    IDS_OSD_LYRICS_SUBTITLES "Lyrics: as subtitles"
+    IDS_OSD_LYRICS_HIDDEN   "Lyrics: hidden"
+    IDS_OSD_LYRICS_TATEGAKI "Lyrics: tategaki"
+    IDS_OSD_LYRICS_HORIZONTAL "Lyrics: horizontal"
+    IDS_OSD_COVERART_SHOWN  "Cover art: shown"
+    IDS_OSD_COVERART_HIDDEN "Cover art: hidden"
+    IDS_SUBSTYLE_TATEGAKI_FONT "Tategaki: @%s, %g"
+    IDS_SUBSTYLE_TATEGAKI_FONT_TIP "Font of the lyrics shown in tategaki (vertical writing), in its vertical ""@"" form; the rest of the style is shared. Pick the same font as Font to follow it."
     IDS_AUDIO_BOOST_WARNING "WARNING: Boosting audio volume can in some situations have a negative effect on audio quality due to overflow.\n\nThere are two better and safer methods for increasing volume:\n1) Enabling mixing in the internal audio decoder settings.\nInternal Filters > Audio Decoder > Mixing\nThis is recommended if you have stereo speakers or headphones.\nTo increase loudness of voices, set center mix level to 1.0 in the mixing settings.\n2) Enable Normalize"
 END
 

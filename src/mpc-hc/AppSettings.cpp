@@ -969,6 +969,55 @@ void CAppSettings::ClearRecentFiles() {
     }
 }
 
+void CAppSettings::LyricsTategakiFont::ApplyTo(STSStyle& style) const
+{
+    if (face.IsEmpty()) {
+        return;
+    }
+    style.fontName = face;
+    // what is not set follows the style
+    if (size > 0.0) {
+        style.fontSize = size;
+    }
+    if (weight > 0) {
+        style.fontWeight = weight;
+    }
+    if (italic >= 0) {
+        style.fItalic = !!italic;
+    }
+}
+
+CString CAppSettings::LyricsTategakiFont::Save() const
+{
+    if (face.IsEmpty()) {
+        return CString();
+    }
+    CString str;
+    // the face last, so it may hold anything
+    str.Format(_T("%g;%d;%d;%s"), size, weight, italic, face.GetString());
+    return str;
+}
+
+void CAppSettings::LyricsTategakiFont::Load(const CString& str)
+{
+    *this = LyricsTategakiFont();
+    double s = 0.0;
+    int w = 0, it = -1, n = 0;
+    if (_stscanf_s(str, _T("%lf;%d;%d;%n"), &s, &w, &it, &n) == 3 && n > 0) {
+        face = str.Mid(n);
+        size = std::max(s, 0.0);
+        weight = std::max(w, 0);
+        italic = std::clamp(it, -1, 1);
+    } else {
+        // the face alone, the rest following the default style
+        face = str;
+    }
+    face.TrimLeft(_T('@'));
+    if (face.IsEmpty()) {
+        *this = LyricsTategakiFont();
+    }
+}
+
 void CAppSettings::SaveSettings(bool write_full_history /* = false */)
 {
     CMPlayerCApp* pApp = AfxGetMyApp();
@@ -1077,6 +1126,7 @@ void CAppSettings::SaveSettings(bool write_full_history /* = false */)
     CString style;
     pApp->WriteProfileString(IDS_R_SETTINGS, IDS_RS_SPSTYLE, style <<= subtitlesDefStyle);
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_SPROUNDEDOPAQUEBOX, bSubtitleRoundedOpaqueBox);
+    pApp->WriteProfileString(IDS_R_SETTINGS, IDS_RS_LYRICSTATEGAKIFONT, lyricsTategakiFont.Save());
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_SPOVERRIDEPLACEMENT, fOverridePlacement);
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_SPHORPOS, nHorPos);
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_SPVERPOS, nVerPos);
@@ -1938,6 +1988,7 @@ void CAppSettings::LoadSettings()
         }
     }
     bSubtitleRoundedOpaqueBox = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SPROUNDEDOPAQUEBOX, FALSE);
+    lyricsTategakiFont.Load(pApp->GetProfileString(IDS_R_SETTINGS, IDS_RS_LYRICSTATEGAKIFONT));
     fOverridePlacement = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SPOVERRIDEPLACEMENT, FALSE);
     nHorPos = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SPHORPOS, 50);
     nVerPos = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SPVERPOS, 90);

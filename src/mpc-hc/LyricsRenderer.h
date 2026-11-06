@@ -28,21 +28,24 @@ class Lyrics;
 class CRenderedTextSubtitle;
 
 // Renders lyrics lines with the internal subtitle renderer (RTS) in the player's default subtitle
-// style, as if the view were the video: they look as subtitles do over a video of the view's size.
-// Each line is rendered on its own into an image, which the view composes.
+// style, at a fixed size scaled by the DPI like UI text. Each line is rendered on its own into an
+// image, which the view composes.
+//
+// Lines are written horizontally, or vertically (縦書き, tategaki): top to bottom, wrapping into
+// columns right to left, in the vertical form of the tategaki font.
 class CLyricsRenderer
 {
 public:
     enum class Layout {
-        Panel, // lines wrapped in a column and placed by the caller; the style's alignment and margins are unused
-        Line,  // a line placed by the style (alignment, margins, placement override) over the whole view
+        Panel, // lines wrapped across the panel and placed by the caller; the style's alignment and margins are unused
+        Line,  // a line placed by the style (alignment, margins, placement override) in the whole view
     };
 
     // A rendered line, premultiplied ARGB
     struct Image {
         // Where the pixels go and the layout box (its lines, without borders or shadow), in render
-        // coordinates: the view's for Line; for Panel the view's horizontally, vertically arbitrary,
-        // so place it by its box.
+        // coordinates: the view's for Line; for a horizontal Panel the view's horizontally, vertically
+        // arbitrary; for a vertical Panel arbitrary. Place panel lines by their box.
         CRect rc = CRect(0, 0, 0, 0), rcBox = CRect(0, 0, 0, 0);
         std::vector<DWORD> bits; // rc.Width() * rc.Height()
     };
@@ -53,10 +56,12 @@ public:
     CLyricsRenderer& operator=(const CLyricsRenderer&) = delete;
 
     // Call before GetLine with the current layout. Cheap when nothing changed; it also picks up
-    // changed subtitle settings. Line scales the style to the view, as subtitles to the video.
-    // Panel scales it by panelScale (the DPI) only, the view's height is unused; its lines wrap
-    // within [columnLeft, columnRight) of the view.
-    void Prepare(const Lyrics& lyrics, Layout layout, CSize view, int columnLeft = 0, int columnRight = 0, double panelScale = 1.0);
+    // changed subtitle settings. The style is scaled by scale (the DPI) only, so a smaller view
+    // shows fewer lines rather than smaller ones.
+    // Panel lines wrap within [lineFrom, lineTo) of the view: horizontally, the view height being
+    // unused; vertically, only the length being used. Line lines wrap within the style's margins.
+    void Prepare(const Lyrics& lyrics, Layout layout, bool bVertical, CSize view, double scale,
+                 int lineFrom = 0, int lineTo = 0);
 
     // Forgets the lyrics and the images, call when the lyrics are replaced
     void Reset();
@@ -64,22 +69,28 @@ public:
     // The image of line i, nullptr when it shows nothing
     const Image* GetLine(int i);
 
-    // Box height of line i without rendering it; a blank line's for lines without text
-    int GetLineHeight(int i);
+    // Box size of line i without rendering it; a blank line's for lines without text
+    CSize GetLineSize(int i);
+    int GetLineHeight(int i) { return GetLineSize(i).cy; }
 
     // Frees the images of lines outside [first, last]
     void Retain(int first, int last);
 
-    // Space between the boxes of consecutive panel lines
+    // Space between the boxes of consecutive panel lines: rows, or columns when vertical
     int GetLineGap() const { return m_lineGap; }
+
+    // Sets the font of a style for vertical lines: the tategaki font setting (face, size, weight,
+    // italic), or the style's own when it is not set, in its GDI vertical form ("@" prefixed)
+    static void ApplyTategakiFont(STSStyle& style);
 
 private:
     // Everything the images depend on
     struct Settings {
         Layout layout = Layout::Line;
+        bool bVertical = false;
         CSize view = CSize(0, 0);
-        int columnLeft = 0, columnRight = 0;
-        double panelScale = 1.0;
+        int lineFrom = 0, lineTo = 0; // vertical Panel: 0 and the length, its position not mattering
+        double scale = 1.0;
         STSStyle style;
         double fontScale = 1.0;
         bool bUseFreeType = false;
@@ -99,10 +110,12 @@ private:
         Image img;
     };
 
-    static Settings CurrentSettings(Layout layout, CSize view, int columnLeft, int columnRight, double panelScale);
+    static Settings CurrentSettings(Layout layout, bool bVertical, CSize view, double scale, int lineFrom, int lineTo);
     void Build(const Lyrics& lyrics);
     Slot& Measure(int i);
     void RenderLine(int i, Image& img);
+    // Vertical Line: where the box of a line goes in the view
+    CPoint PlaceVerticalLine(const CRect& rcBox) const;
 
     Settings m_settings;
     size_t m_nLines = 0;
@@ -112,11 +125,15 @@ private:
     std::unique_ptr<CRenderedTextSubtitle> m_pRTS; // never handed out as a COM object
     std::vector<int> m_entries; // RTS entry of each line, -1 for an empty line
     std::vector<Slot> m_slots;
-    int m_blankHeight = 0;      // box height of a one-line entry, measured only
+    CSize m_blankSize = CSize(0, 0); // box of a one-line entry, measured only
 
     // What RTS renders into: transparent is 0xFF000000, its alpha byte being the transparency
     CSize m_scratchSize = CSize(0, 0);
     std::vector<DWORD> m_scratch;
 
     int m_lineGap = 0;
+
+    // Vertical Line: the view within the style's margins, and the style's alignment placing the box in it
+    CRect m_lineArea = CRect(0, 0, 0, 0);
+    int m_lineAlignment = 2;
 };

@@ -33,10 +33,7 @@ namespace
 
     constexpr DWORD RTS_TRANSPARENT = 0xFF000000;
 
-    // The default style is defined for a 384x288 script, scaled to the video as for SRT subtitles
-    constexpr double STYLE_RES_X = 384.0, STYLE_RES_Y = 288.0;
-
-    // Lines a panel line may wrap to before its rendering is cut
+    // Lines (vertical: columns) a line may wrap to before its rendering is cut
     constexpr int PANEL_MAX_WRAPS = 8;
 
     REFERENCE_TIME LineStart(size_t i)
@@ -45,18 +42,41 @@ namespace
     }
 
     // RTS reads {...} as override tags, so it would hide bracketed text such as "{Chorus}"
-    CStringW EscapeText(CStringW text)
+    CStringW EscapeText(CStringW text, bool bTategaki)
     {
         text.Replace(L'{', L'\xFF5B'); // fullwidth curly brackets
         text.Replace(L'}', L'\xFF5D');
+        if (bTategaki) {
+            // RTS only wraps at spaces, while Japanese lyrics separate phrases with ideographic ones:
+            // a space after each lets a column too long for the view break there
+            text.Replace(L"\x3000", L"\x3000 ");
+        }
         return text;
     }
+
+    // A box turned a quarter clockwise about its top left corner, the origin of the turn for a
+    // line aligned top left: its left edge becomes its top one, its top edge its right one
+    CRect TurnBox(const CRect& r)
+    {
+        return CRect(r.left - r.Height(), r.top, r.left, r.top + r.Width());
+    }
+}
+
+void CLyricsRenderer::ApplyTategakiFont(STSStyle& style)
+{
+    // a font of its own, or the style's
+    AfxGetAppSettings().lyricsTategakiFont.ApplyTo(style);
+    CString face = style.fontName;
+    face.TrimLeft(_T('@'));
+    // GDI gives the "@" face of a font its vertical writing forms: the glyphs on their side,
+    // with vertical punctuation, small kana and long vowel marks
+    style.fontName = _T("@") + face;
 }
 
 bool CLyricsRenderer::Settings::operator==(const Settings& s) const
 {
-    return layout == s.layout && view == s.view && columnLeft == s.columnLeft && columnRight == s.columnRight
-           && panelScale == s.panelScale && style == s.style && fontScale == s.fontScale && bUseFreeType == s.bUseFreeType && bRoundedBox == s.bRoundedBox
+    return layout == s.layout && bVertical == s.bVertical && view == s.view && lineFrom == s.lineFrom && lineTo == s.lineTo
+           && scale == s.scale && style == s.style && fontScale == s.fontScale && bUseFreeType == s.bUseFreeType && bRoundedBox == s.bRoundedBox
            && bOverridePlacement == s.bOverridePlacement && nHorPos == s.nHorPos && nVerPos == s.nVerPos
            && langHint == s.langHint;
 }
@@ -65,31 +85,45 @@ CLyricsRenderer::CLyricsRenderer() = default;
 
 CLyricsRenderer::~CLyricsRenderer() = default;
 
-CLyricsRenderer::Settings CLyricsRenderer::CurrentSettings(Layout layout, CSize view, int columnLeft, int columnRight, double panelScale)
+CLyricsRenderer::Settings CLyricsRenderer::CurrentSettings(Layout layout, bool bVertical, CSize view, double scale, int lineFrom, int lineTo)
 {
     const CAppSettings& s = AfxGetAppSettings();
 
     Settings st;
     st.layout = layout;
+    st.bVertical = bVertical;
     st.view = view;
-    if (layout == Layout::Panel) {
-        // sized independently of the height, so it does not matter
-        st.view.cy = 0;
-        st.panelScale = panelScale > 0.0 ? panelScale : 1.0;
-    }
+    st.scale = scale > 0.0 ? scale : 1.0;
     st.style = s.subtitlesDefStyle;
     st.fontScale = s.m_RenderersSettings.fontScaleOverride;
     st.bUseFreeType = s.bUseFreeType;
     st.bRoundedBox = s.bSubtitleRoundedOpaqueBox;
     st.langHint = s.strOpenTypeLangHint;
-    if (layout == Layout::Panel) {
-        // only what the layout uses, so other changes keep the images
-        st.columnLeft = columnLeft;
-        st.columnRight = columnRight;
-    } else {
-        st.bOverridePlacement = s.fOverridePlacement;
-        st.nHorPos = s.nHorPos;
-        st.nVerPos = s.nVerPos;
+    if (bVertical) {
+        ApplyTategakiFont(st.style);
+        // the vertical forms are GDI's, FreeType would draw the glyphs as in a horizontal line
+        st.bUseFreeType = false;
+    }
+    // only what the layout uses, so other changes keep the images
+    switch (layout) {
+        case Layout::Panel:
+            if (bVertical) {
+                // placed by the caller, only the length of the columns matters
+                st.view = CSize(0, 0);
+                st.lineFrom = 0;
+                st.lineTo = std::max(0, lineTo - lineFrom);
+            } else {
+                // sized independently of the height, so it does not matter
+                st.view.cy = 0;
+                st.lineFrom = lineFrom;
+                st.lineTo = lineTo;
+            }
+            break;
+        case Layout::Line:
+            st.bOverridePlacement = s.fOverridePlacement;
+            st.nHorPos = s.nHorPos;
+            st.nVerPos = s.nVerPos;
+            break;
     }
     return st;
 }
@@ -104,13 +138,13 @@ void CLyricsRenderer::Reset()
     m_scratch.shrink_to_fit();
     m_scratchSize = CSize(0, 0);
     m_nLines = 0;
-    m_blankHeight = 0;
+    m_blankSize = CSize(0, 0);
 }
 
-void CLyricsRenderer::Prepare(const Lyrics& lyrics, Layout layout, CSize view,
-                              int columnLeft /*= 0*/, int columnRight /*= 0*/, double panelScale /*= 1.0*/)
+void CLyricsRenderer::Prepare(const Lyrics& lyrics, Layout layout, bool bVertical, CSize view, double scale,
+                              int lineFrom /*= 0*/, int lineTo /*= 0*/)
 {
-    Settings st = CurrentSettings(layout, view, columnLeft, columnRight, panelScale);
+    Settings st = CurrentSettings(layout, bVertical, view, scale, lineFrom, lineTo);
     if (m_bBuilt && st == m_settings && m_nLines == lyrics.lines.size()) {
         return;
     }
@@ -126,19 +160,21 @@ void CLyricsRenderer::Build(const Lyrics& lyrics)
 
     const Settings& st = m_settings;
     const bool bPanel = st.layout == Layout::Panel;
+    const bool bVertical = st.bVertical;
     const CSize view = st.view;
-    if (view.cx <= 0 || (!bPanel && view.cy <= 0) || lyrics.lines.empty()) {
+    const bool bNoRoom = bPanel ? (bVertical ? st.lineTo <= st.lineFrom : view.cx <= 0)
+                                : view.cx <= 0 || view.cy <= 0;
+    if (bNoRoom || lyrics.lines.empty()) {
         return;
     }
 
-    // The script resolution is the render size, so script units are pixels and the style is
-    // scaled here, as RTS scales it for SRT subtitles:
-    // - Line: to the view standing in for the video; borders and shadow stay in pixels
-    // - Panel: by the DPI only, like UI text, so a short view shows fewer lines rather than
-    //   smaller ones; everything scales, keeping the style's proportions
+    // The script resolution is the render size, so script units are pixels. The style is scaled
+    // by the DPI only, like UI text, not with the view as subtitles are with the video: a smaller
+    // view shows fewer lines rather than smaller ones. Everything scales, keeping the style's
+    // proportions; the margins are in pixels at 96 DPI.
     STSStyle style = st.style;
-    if (bPanel) {
-        const double scale = st.panelScale;
+    {
+        const double scale = st.scale;
         style.fontSize *= scale;
         style.fontSpacing *= scale;
         style.fGaussianBlur *= scale;
@@ -146,32 +182,76 @@ void CLyricsRenderer::Build(const Lyrics& lyrics)
         style.outlineWidthY *= scale;
         style.shadowDepthX *= scale;
         style.shadowDepthY *= scale;
-        style.scrAlignment = 8; // top center, at the box top given by the margins
+        style.marginRect.left = std::lround(style.marginRect.left * scale);
+        style.marginRect.right = std::lround(style.marginRect.right * scale);
+        style.marginRect.top = std::lround(style.marginRect.top * scale);
+        style.marginRect.bottom = std::lround(style.marginRect.bottom * scale);
+    }
+    if (bPanel) {
+        // horizontal: top center, at the box top given by the margins set below
+        style.scrAlignment = 8;
         style.marginRect.SetRect(0, 0, 0, 0);
-    } else {
-        const double scaleX = view.cx / STYLE_RES_X, scaleY = view.cy / STYLE_RES_Y;
-        style.fontSize *= scaleY;
-        style.fontSpacing *= scaleX;
-        style.marginRect.left = std::lround(style.marginRect.left * scaleX);
-        style.marginRect.right = std::lround(style.marginRect.right * scaleX);
-        style.marginRect.top = std::lround(style.marginRect.top * scaleY);
-        style.marginRect.bottom = std::lround(style.marginRect.bottom * scaleY);
-        style.fGaussianBlur *= scaleY;
+    } else if (bVertical) {
+        // Placed by the style's alignment within its margins, like a subtitle, but by this class:
+        // RTS places the line before turning it
+        m_lineAlignment = (style.scrAlignment >= 1 && style.scrAlignment <= 9) ? style.scrAlignment : 2;
+        m_lineArea.SetRect(style.marginRect.left, style.marginRect.top,
+                           view.cx - style.marginRect.right, view.cy - style.marginRect.bottom);
+        if (m_lineArea.Width() <= 0 || m_lineArea.Height() <= 0) {
+            m_lineArea.SetRect(0, 0, view.cx, view.cy);
+        }
     }
 
-    // Half the font size between the lines, plus what their borders and shadow take:
-    // the borders of both lines, and the shadow of the upper one going down or of the lower one going up
+    if (bVertical) {
+        // Top left, the origin of the turn below: the lines a long one wraps to are aligned left,
+        // so turned, its columns start at the same top, as in vertical writing
+        style.scrAlignment = 7;
+        // GDI lays the glyphs of an "@" font on their side along a horizontal line. Turned a quarter
+        // clockwise, the line runs top to bottom with the glyphs upright, and the lines it wraps to
+        // become columns from right to left.
+        style.fontAngleZ = std::fmod(style.fontAngleZ + 270.0, 360.0);
+        // the scales apply along and across the line before the turn: vertically and horizontally after it
+        std::swap(style.fontScaleX, style.fontScaleY);
+        // the shadow offset turns with the text, so it is turned back to stay as set on screen;
+        // the borders are widened after the turn
+        const double shadowX = style.shadowDepthX;
+        style.shadowDepthX = style.shadowDepthY;
+        style.shadowDepthY = -shadowX;
+    }
+
+    // Half the font size between the lines, plus what their borders and shadow take: the borders
+    // of both lines, and the shadow of one of them reaching towards the other. Across the lines:
+    // vertically for rows; horizontally for vertical columns, whose font size across is the
+    // turned style's Y one, and whose horizontal shadow on screen is the turned style's Y one.
     const double fontPx = style.fontSize * st.fontScale * style.fontScaleY / 100.0;
-    const double outline = std::max(style.outlineWidthY, 0.0);
+    const double outline = std::max(bVertical ? style.outlineWidthX : style.outlineWidthY, 0.0);
     const double shadow = std::abs(style.shadowDepthY);
-    const double reach = outline + shadow + 3 * std::max(style.fGaussianBlur, 0.0);
     m_lineGap = std::max(1, int(std::lround(fontPx / 2 + 2 * outline + shadow)));
 
-    // Panel lines are rendered with room around their box for borders, shadow and blur,
-    // and room for a line wrapped many times
-    const int panelTop = bPanel ? int(std::ceil(reach + fontPx)) + 8 : 0;
-    const int height = bPanel ? 2 * panelTop + int(std::ceil(fontPx * 1.5 * PANEL_MAX_WRAPS)) : view.cy;
-    m_scratchSize = CSize(view.cx, height);
+    // Room for borders, shadow and blur around a box, any way
+    const double reach = std::max({ style.outlineWidthX, style.outlineWidthY, 0.0 })
+                         + std::max(std::abs(style.shadowDepthX), std::abs(style.shadowDepthY))
+                         + 3 * std::max(style.fGaussianBlur, 0.0);
+    const double emPx = style.fontSize * st.fontScale * std::max(style.fontScaleX, style.fontScaleY) / 100.0;
+    const int pad = int(std::ceil(reach + emPx)) + 8;
+    // across the lines, for one wrapped many times
+    const int across = int(std::ceil(fontPx * 1.5 * PANEL_MAX_WRAPS));
+
+    if (bVertical) {
+        // Wrapped to the length of the columns, then turned about the top left of the box: the
+        // columns go left of where the line started, down from its top. Rendered with room for
+        // them on the left, the line along the top. The columns of a line wrapped more than
+        // that are cut.
+        const int length = bPanel ? st.lineTo - st.lineFrom : m_lineArea.Height();
+        m_scratchSize = CSize(2 * pad + across + length, 2 * pad + std::max(length, across));
+        style.marginRect.SetRect(pad + across, pad, pad, pad);
+    } else if (bPanel) {
+        // Rendered with room around the box, the lines wrapped within the column
+        m_scratchSize = CSize(view.cx, 2 * pad + across);
+        style.marginRect.SetRect(std::max(1, st.lineFrom), pad, std::max(1, int(view.cx - st.lineTo)), 0);
+    } else {
+        m_scratchSize = view;
+    }
     m_scratch.assign(size_t(m_scratchSize.cx) * m_scratchSize.cy, RTS_TRANSPARENT);
 
     m_pRTS = std::make_unique<CRenderedTextSubtitle>(&m_csRTS);
@@ -183,20 +263,17 @@ void CLyricsRenderer::Build(const Lyrics& lyrics)
     rts.SetUseFreeType(st.bUseFreeType);
     rts.SetRoundedOpaqueBox(st.bRoundedBox);
     rts.SetOpenTypeLangHint(st.langHint);
-    if (!bPanel) {
+    if (!bPanel && !bVertical) {
         rts.SetAlignment(st.bOverridePlacement, st.nHorPos, st.nVerPos);
     }
 
     // Entry margins of 0 fall back to the style's
-    CRect margins(0, 0, 0, 0);
-    if (bPanel) {
-        margins.SetRect(std::max(1, st.columnLeft), panelTop, std::max(1, int(view.cx - st.columnRight)), 0);
-    }
+    const CRect margins(0, 0, 0, 0);
 
     m_entries.reserve(m_nLines);
     for (size_t i = 0; i < m_nLines; i++) {
         const size_t count = rts.GetCount();
-        rts.Add(EscapeText(lyrics.lines[i].text), true, LineStart(i), LineStart(i) + LINE_SLOT,
+        rts.Add(EscapeText(lyrics.lines[i].text, bVertical), true, LineStart(i), LineStart(i) + LINE_SLOT,
                 _T("Default"), _T(""), _T(""), margins);
         // Add drops empty text
         m_entries.push_back(rts.GetCount() > count ? int(count) : -1);
@@ -209,7 +286,11 @@ void CLyricsRenderer::Build(const Lyrics& lyrics)
     rts.Add(L"x", true, LineStart(m_nLines), LineStart(m_nLines) + LINE_SLOT, _T("Default"), _T(""), _T(""), margins);
 
     rts.Init(m_scratchSize, CRect(CPoint(0, 0), m_scratchSize));
-    m_blankHeight = rts.GetLayoutRect(blankEntry).Height();
+    CRect blank = rts.GetLayoutRect(blankEntry);
+    if (bVertical) {
+        blank = TurnBox(blank);
+    }
+    m_blankSize = blank.Size();
 }
 
 CLyricsRenderer::Slot& CLyricsRenderer::Measure(int i)
@@ -219,17 +300,39 @@ CLyricsRenderer::Slot& CLyricsRenderer::Measure(int i)
         slot.bMeasured = true;
         const int entry = m_entries[i];
         slot.rcBox = entry >= 0 ? m_pRTS->GetLayoutRect(entry) : CRect(0, 0, 0, 0);
+        if (m_settings.bVertical && !slot.rcBox.IsRectEmpty()) {
+            slot.rcBox = TurnBox(slot.rcBox);
+        }
     }
     return slot;
 }
 
-int CLyricsRenderer::GetLineHeight(int i)
+CPoint CLyricsRenderer::PlaceVerticalLine(const CRect& rcBox) const
+{
+    const Settings& st = m_settings;
+    const int w = rcBox.Width(), h = rcBox.Height();
+    if (st.bOverridePlacement) {
+        // as for subtitles: centred horizontally at the position, its bottom at the vertical one;
+        // kept in the view
+        const int x = MulDiv(st.view.cx, st.nHorPos, 100) - w / 2;
+        const int y = MulDiv(st.view.cy, st.nVerPos, 100) - h;
+        return CPoint(std::max(0, std::min(x, int(st.view.cx - w))), std::max(0, std::min(y, int(st.view.cy - h))));
+    }
+    // the alignment as on the numpad
+    const CRect& a = m_lineArea;
+    const int align = m_lineAlignment;
+    const int x = (align % 3 == 1) ? a.left : (align % 3 == 0) ? a.right - w : a.left + (a.Width() - w) / 2;
+    const int y = (align <= 3) ? a.bottom - h : (align <= 6) ? a.top + (a.Height() - h) / 2 : a.top;
+    return CPoint(x, y);
+}
+
+CSize CLyricsRenderer::GetLineSize(int i)
 {
     if (!m_pRTS || i < 0 || i >= (int)m_slots.size()) {
-        return 0;
+        return CSize(0, 0);
     }
     const Slot& slot = Measure(i);
-    return slot.rcBox.IsRectEmpty() ? m_blankHeight : slot.rcBox.Height();
+    return slot.rcBox.IsRectEmpty() ? m_blankSize : slot.rcBox.Size();
 }
 
 const CLyricsRenderer::Image* CLyricsRenderer::GetLine(int i)
@@ -242,6 +345,12 @@ const CLyricsRenderer::Image* CLyricsRenderer::GetLine(int i)
         slot.bRendered = true;
         RenderLine(i, slot.img);
         slot.img.rcBox = slot.rcBox;
+        if (m_settings.layout == Layout::Line && m_settings.bVertical && !slot.img.bits.empty()) {
+            // from the square it was rendered in to the view
+            const CSize offset = PlaceVerticalLine(slot.rcBox) - slot.rcBox.TopLeft();
+            slot.img.rc.OffsetRect(offset);
+            slot.img.rcBox.OffsetRect(offset);
+        }
     }
     return slot.img.bits.empty() ? nullptr : &slot.img;
 }

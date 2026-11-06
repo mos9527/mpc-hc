@@ -34,15 +34,17 @@ namespace
 
     struct LyricsMenuItem {
         LyricsMode mode;
-        LPCWSTR label; // not translated: kept out of the resource file
-        LPCWSTR osd;
+        UINT label; // string resources
+        UINT osd;
     };
 
     const LyricsMenuItem kLyricsMenu[] = {
-        { LyricsMode::Panel, L"Lyrics &Panel",        L"Lyrics: panel" },
-        { LyricsMode::Line,  L"Lyrics as &Subtitles", L"Lyrics: as subtitles" },
-        { LyricsMode::Off,   L"&Hide Lyrics",         L"Lyrics: hidden" },
+        { LyricsMode::Panel, IDS_LYRICS_PANEL,     IDS_OSD_LYRICS_PANEL },
+        { LyricsMode::Line,  IDS_LYRICS_SUBTITLES, IDS_OSD_LYRICS_SUBTITLES },
+        { LyricsMode::Off,   IDS_LYRICS_HIDE,      IDS_OSD_LYRICS_HIDDEN },
     };
+    // After the modes and a separator: whether they are written vertically (縦書き)
+    constexpr int kTategakiItem = (int)_countof(kLyricsMenu);
 
     // the mode restored by the subtitle on/off toggle
     LyricsMode s_lastShownMode = LyricsMode::Panel;
@@ -61,12 +63,26 @@ void CMainFrame::SetupLyricsSubMenu(CMPCThemeMenu& subMenu)
         if (item.mode == current) {
             flags |= MF_CHECKED;
         }
-        VERIFY(subMenu.AppendMenu(flags, id++, item.label));
+        VERIFY(subMenu.AppendMenu(flags, id++, ResStr(item.label)));
     }
+
+    VERIFY(subMenu.AppendMenu(MF_SEPARATOR));
+    UINT flags = MF_STRING | MF_ENABLED;
+    if (CMouseWndWithArtView::GetLyricsTategaki()) {
+        flags |= MF_CHECKED;
+    }
+    VERIFY(subMenu.AppendMenu(flags, ID_SUBTITLES_SUBITEM_START + kTategakiItem, ResStr(IDS_LYRICS_TATEGAKI)));
 }
 
 void CMainFrame::OnLyricsSubMenu(int i)
 {
+    if (i == kTategakiItem) {
+        const bool bTategaki = !CMouseWndWithArtView::GetLyricsTategaki();
+        CMouseWndWithArtView::SetLyricsTategaki(bTategaki);
+        m_wndView.UpdateLyrics();
+        m_OSD.DisplayMessage(OSD_TOPLEFT, ResStr(bTategaki ? IDS_OSD_LYRICS_TATEGAKI : IDS_OSD_LYRICS_HORIZONTAL));
+        return;
+    }
     if (i < 0 || i >= (int)_countof(kLyricsMenu)) {
         return;
     }
@@ -76,7 +92,7 @@ void CMainFrame::OnLyricsSubMenu(int i)
     }
     CMouseWndWithArtView::SetLyricsMode(mode);
     m_wndView.UpdateLyrics();
-    m_OSD.DisplayMessage(OSD_TOPLEFT, kLyricsMenu[i].osd);
+    m_OSD.DisplayMessage(OSD_TOPLEFT, ResStr(kLyricsMenu[i].osd));
 }
 
 bool CMainFrame::ToggleLyricsDisplay()
@@ -109,7 +125,7 @@ void CMainFrame::OnViewCoverArt()
     if (HasDedicatedFSVideoWindow()) {
         m_pDedicatedFSVideoWnd->Invalidate();
     }
-    m_OSD.DisplayMessage(OSD_TOPLEFT, bShow ? L"Cover art: shown" : L"Cover art: hidden");
+    m_OSD.DisplayMessage(OSD_TOPLEFT, ResStr(bShow ? IDS_OSD_COVERART_SHOWN : IDS_OSD_COVERART_HIDDEN));
 }
 
 void CMainFrame::OnUpdateViewCoverArt(CCmdUI* pCmdUI)

@@ -154,7 +154,11 @@ BOOL CMouseWndWithArtView::OnEraseBkgnd(CDC* pDC)
     }
 
     if (m_lyricsView == LyricsView::Panel) {
-        DrawLyrics(m_rcLyrics, client.Size());
+        if (m_bLyricsTategaki) {
+            DrawLyricsTategaki(m_rcLyrics, client.Size());
+        } else {
+            DrawLyrics(m_rcLyrics, client.Size());
+        }
     } else if (m_lyricsView == LyricsView::Line) {
         // placed by the subtitle style, anywhere in the view
         m_rcLyrics = client;
@@ -356,10 +360,14 @@ namespace
     constexpr UINT_PTR TIMER_LYRICS = 0x4C59; // CMouse uses callback timers with pointer IDs
     constexpr UINT LYRICS_POLL_MS = 50;       // the seek bar position itself is polled every 100 ms by default
     constexpr LPCTSTR LYRICS_MODE_KEY = _T("LyricsDisplay");
+    constexpr LPCTSTR LYRICS_TATEGAKI_KEY = _T("LyricsTategaki");
     constexpr LPCTSTR COVER_ART_KEY = _T("AudioViewCoverArt");
+    // a former mode value: the tategaki panel, now the panel with tategaki on
+    constexpr int OLD_LYRICS_MODE_TATEGAKI = 3;
 
     // not loaded yet while negative
     int s_lyricsMode = -1;
+    int s_lyricsTategaki = -1;
     int s_showCoverArt = -1;
 
     int LoadViewSetting(int& cache, LPCTSTR key, int def)
@@ -375,12 +383,22 @@ namespace
         cache = value;
         AfxGetApp()->WriteProfileInt(IDS_R_SETTINGS, key, value);
     }
+
+    // Panels: the neighbours of the current line fade out by distance
+    BYTE DimmedLyricsOpacity(int distance)
+    {
+        return BYTE(std::lround(255.0 * std::max(0.25, 0.6 - 0.1 * (distance - 1))));
+    }
 }
 
 CMouseWndWithArtView::LyricsMode CMouseWndWithArtView::GetLyricsMode()
 {
     int mode = LoadViewSetting(s_lyricsMode, LYRICS_MODE_KEY, (int)LyricsMode::Panel);
-    if (mode > (int)LyricsMode::Off) {
+    if (mode == OLD_LYRICS_MODE_TATEGAKI) {
+        SetLyricsTategaki(true);
+        SetLyricsMode(LyricsMode::Panel);
+        mode = (int)LyricsMode::Panel;
+    } else if (mode > (int)LyricsMode::Off) {
         mode = s_lyricsMode = (int)LyricsMode::Panel;
     }
     return (LyricsMode)mode;
@@ -389,6 +407,16 @@ CMouseWndWithArtView::LyricsMode CMouseWndWithArtView::GetLyricsMode()
 void CMouseWndWithArtView::SetLyricsMode(LyricsMode mode)
 {
     StoreViewSetting(s_lyricsMode, LYRICS_MODE_KEY, (int)mode);
+}
+
+bool CMouseWndWithArtView::GetLyricsTategaki()
+{
+    return !!LoadViewSetting(s_lyricsTategaki, LYRICS_TATEGAKI_KEY, FALSE);
+}
+
+void CMouseWndWithArtView::SetLyricsTategaki(bool bTategaki)
+{
+    StoreViewSetting(s_lyricsTategaki, LYRICS_TATEGAKI_KEY, bTategaki ? TRUE : FALSE);
 }
 
 bool CMouseWndWithArtView::GetShowCoverArt()
@@ -428,6 +456,7 @@ void CMouseWndWithArtView::UpdateLyrics(bool bKeepLayout /*= false*/)
     if (view != LyricsView::None || !bKeepLayout) {
         m_lyricsView = view;
     }
+    m_bLyricsTategaki = GetLyricsTategaki();
     // the lyrics may have been replaced
     m_lyricsRenderer.Reset();
 
@@ -498,13 +527,10 @@ void CMouseWndWithArtView::DrawLyrics(const CRect& rc, const CSize& client)
 
     // a fixed size from the style, scaled by the DPI like UI text, wrapped in the area;
     // a short view shows fewer lines, not smaller ones
-    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Panel, client, area.left, area.right, dpi.ScaleFactorY());
+    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Panel, false, client, dpi.ScaleFactorY(), area.left, area.right);
     const int gap = m_lyricsRenderer.GetLineGap();
+    const auto dimmed = DimmedLyricsOpacity;
 
-    // neighbours of the current line fade out by distance
-    auto dimmed = [](int distance) {
-        return BYTE(std::lround(255.0 * std::max(0.25, 0.6 - 0.1 * (distance - 1))));
-    };
     // placed by its box, top at top; borders and shadow may reach past the area, not past rc
     auto draw = [&](int i, int top, BYTE opacity) {
         if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(i)) {
@@ -566,6 +592,95 @@ void CMouseWndWithArtView::DrawLyrics(const CRect& rc, const CSize& client)
     }
 }
 
+void CMouseWndWithArtView::DrawLyricsTategaki(const CRect& rc, const CSize& client)
+{
+    if (rc.IsRectEmpty() || !HasLyrics()) {
+        return;
+    }
+
+    const Lyrics& lyrics = m_pMainFrame->m_mediaMeta.lyrics;
+    const DpiHelper& dpi = m_pMainFrame->m_dpi;
+    const int nLines = (int)lyrics.lines.size();
+    const int cur = lyrics.LineAt(m_pMainFrame->GetPos());
+    m_nLyricsLine = cur;
+
+    CRect area = rc;
+    area.DeflateRect(dpi.ScaleX(16), dpi.ScaleY(16));
+    if (area.IsRectEmpty()) {
+        return;
+    }
+
+    // As the panel turned a quarter: the same size, the lines wrapped to the height of the area
+    // into columns, which go across it. A narrow view shows fewer columns, not smaller ones.
+    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Panel, true, client, dpi.ScaleFactorY(), area.top, area.bottom);
+    const int gap = m_lyricsRenderer.GetLineGap();
+    const auto dimmed = DimmedLyricsOpacity;
+
+    // placed by its box, left at left and centred vertically, as panel lines are horizontally;
+    // borders and shadow may reach past the area, not past rc
+    auto draw = [&](int i, int left, BYTE opacity) {
+        if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(i)) {
+            const int top = area.top + (area.Height() - img->rcBox.Height()) / 2;
+            const CPoint pt(left + img->rc.left - img->rcBox.left, top + img->rc.top - img->rcBox.top);
+            m_canvas.Blend(img->bits.data(), img->rc.Size(), pt, rc, opacity);
+        }
+    };
+    auto width = [&](int i) {
+        return m_lyricsRenderer.GetLineSize(i).cx;
+    };
+
+    // Read right to left, so the lines go leftwards
+    if (lyrics.timed) {
+        // the current line centred, the lines sung before it on its right and those to come on its
+        // left, dimmed by distance; only lines that fit entirely, so no column is cut at an edge
+        const int anchor = std::max(cur, 0);
+        const int wAnchor = width(anchor);
+        const int leftAnchor = area.left + (area.Width() - wAnchor) / 2;
+        draw(anchor, leftAnchor, cur >= 0 ? 255 : dimmed(1));
+        int first = anchor, last = anchor;
+
+        int x = leftAnchor + wAnchor;
+        for (int i = anchor - 1; i >= 0; i--) {
+            const int w = width(i);
+            if (x + gap + w > area.right) {
+                break;
+            }
+            x += gap;
+            draw(i, x, dimmed(anchor - i));
+            x += w;
+            first = i;
+        }
+        x = leftAnchor;
+        for (int i = anchor + 1; i < nLines; i++) {
+            const int w = width(i);
+            if (x - gap - w < area.left) {
+                break;
+            }
+            x -= gap + w;
+            draw(i, x, dimmed(i - anchor));
+            last = i;
+        }
+        m_lyricsRenderer.Retain(first, last);
+    } else {
+        // untimed text: static from the right, centred when it fits
+        std::vector<int> widths(nLines);
+        int total = 0;
+        for (int i = 0; i < nLines; i++) {
+            widths[i] = width(i);
+            total += widths[i] + (i ? gap : 0);
+        }
+        int x = area.right - std::max(0, (area.Width() - total) / 2);
+        int last = -1;
+        for (int i = 0; i < nLines && x - widths[i] >= area.left; i++) {
+            x -= widths[i];
+            draw(i, x, dimmed(1));
+            x -= gap;
+            last = i;
+        }
+        m_lyricsRenderer.Retain(0, last);
+    }
+}
+
 void CMouseWndWithArtView::DrawLyricsLine(const CSize& client)
 {
     if (!HasLyrics()) {
@@ -576,8 +691,8 @@ void CMouseWndWithArtView::DrawLyricsLine(const CSize& client)
     const int cur = lyrics.LineAt(m_pMainFrame->GetPos());
     m_nLyricsLine = cur;
 
-    // exactly as a subtitle over a video of the view's size
-    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Line, client);
+    // placed as a subtitle by the style, but at the panel's fixed size rather than scaled to the view
+    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Line, m_bLyricsTategaki, client, m_pMainFrame->m_dpi.ScaleFactorY());
     m_lyricsRenderer.Retain(cur, cur);
     if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(cur)) {
         m_canvas.Blend(img->bits.data(), img->rc.Size(), img->rc.TopLeft(), CRect(CPoint(0, 0), client));

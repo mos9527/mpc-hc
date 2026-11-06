@@ -25,6 +25,7 @@
 #include "CMPCThemePPageBase.h"
 #include "../Subtitles/STS.h"
 #include "CMPCThemeSliderCtrl.h"
+#include "AppSettings.h"
 
 // CPPageSubStyle dialog
 
@@ -39,6 +40,8 @@ private:
     bool isStyleDialog;
 
     CMPCThemeButton m_font;
+    CMPCThemeButton m_tategakiFont;  // default style only: the face of the tategaki lyrics
+    CAppSettings::LyricsTategakiFont m_tategakiFontSpec; // no face: the font of m_stss
     int m_iCharset;
     CMPCThemeComboBox m_cbCharset;
     int iOpenTypeLangHint;
@@ -76,6 +79,7 @@ private:
 #endif
 
     void AskColor(int i);
+    void UpdateTategakiFontButton();
 
 public:
     CPPageSubStyle(bool isStyleDialog = false);
@@ -96,6 +100,7 @@ protected:
     DECLARE_MESSAGE_MAP()
 
     afx_msg void OnChooseFont();
+    afx_msg void OnChooseTategakiFont();
     afx_msg void OnChoosePrimaryColor();
     afx_msg void OnChooseSecondaryColor();
     afx_msg void OnChooseOutlineColor();

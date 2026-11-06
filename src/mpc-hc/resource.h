@@ -792,6 +792,7 @@
 #define IDC_EDIT_SHEARX                 22119
 #define IDC_STATIC_SHEARY               22120
 #define IDC_EDIT_SHEARY                 22121
+#define IDC_BUTTON_TATEGAKIFONT         22122
 #define ID_SUB_DELAY_DOWN               24000
 #define ID_SUB_DELAY_UP                 24001
 #define IDS_MPLAYERC_104                24002
@@ -1926,6 +1927,19 @@
 #define IDS_PPAGEADVANCED_SUB_GLYPH_CACHE_MB 58062
 #define IDS_AG_VIEW_FLOATING            58063
 #define IDS_AG_TOGGLE_COVERART          58064
+#define IDS_LYRICS_PANEL                58065
+#define IDS_LYRICS_SUBTITLES            58066
+#define IDS_LYRICS_HIDE                 58067
+#define IDS_LYRICS_TATEGAKI             58068
+#define IDS_OSD_LYRICS_PANEL            58069
+#define IDS_OSD_LYRICS_SUBTITLES        58070
+#define IDS_OSD_LYRICS_HIDDEN           58071
+#define IDS_OSD_LYRICS_TATEGAKI         58072
+#define IDS_OSD_LYRICS_HORIZONTAL       58073
+#define IDS_OSD_COVERART_SHOWN          58074
+#define IDS_OSD_COVERART_HIDDEN         58075
+#define IDS_SUBSTYLE_TATEGAKI_FONT      58076
+#define IDS_SUBSTYLE_TATEGAKI_FONT_TIP  58077
 
 // Next default values for new objects
 // 
@@ -1933,7 +1947,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        20079
 #define _APS_NEXT_COMMAND_VALUE         33467
-#define _APS_NEXT_CONTROL_VALUE         22122
+#define _APS_NEXT_CONTROL_VALUE         22123
 #define _APS_NEXT_SYMED_VALUE           24052
 #endif
 #endif

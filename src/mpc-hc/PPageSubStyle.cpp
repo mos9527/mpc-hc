@@ -82,6 +82,7 @@ void CPPageSubStyle::DoDataExchange(CDataExchange* pDX)
 {
     CMPCThemePPageBase::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_BUTTON1, m_font);
+    DDX_Control(pDX, IDC_BUTTON_TATEGAKIFONT, m_tategakiFont);
     DDX_CBIndex(pDX, IDC_COMBO1, m_iCharset);
     DDX_Control(pDX, IDC_COMBO1, m_cbCharset);
     DDX_CBIndex(pDX, IDC_COMBO2, iOpenTypeLangHint);
@@ -139,6 +140,7 @@ void CPPageSubStyle::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CPPageSubStyle, CMPCThemePPageBase)
     ON_BN_CLICKED(IDC_BUTTON1, OnChooseFont)
+    ON_BN_CLICKED(IDC_BUTTON_TATEGAKIFONT, OnChooseTategakiFont)
     ON_BN_CLICKED(IDC_COLORPRI, OnChoosePrimaryColor)
     ON_BN_CLICKED(IDC_COLORSEC, OnChooseSecondaryColor)
     ON_BN_CLICKED(IDC_COLOROUTL, OnChooseOutlineColor)
@@ -161,13 +163,16 @@ BOOL CPPageSubStyle::OnInitDialog()
         GetDlgItem(IDC_CHECK2)->ShowWindow(SW_HIDE);
     }
 
-    if (!m_bDefaultStyle) { // the rounded box is an option of the player's default style only
+    if (!m_bDefaultStyle) { // the rounded box and the tategaki font are options of the player's default style only
         GetDlgItem(IDC_CHECK_ROUNDEDBOX)->ShowWindow(SW_HIDE);
+        m_tategakiFont.ShowWindow(SW_HIDE);
     }
 
     SetHandCursor(m_hWnd, IDC_COMBO1);
 
     m_font.SetWindowText(m_stss.fontName);
+    m_tategakiFontSpec = AfxGetAppSettings().lyricsTategakiFont;
+    UpdateTategakiFontButton();
     m_iCharset = -1;
     for (int i = 0; i < CharSetLen; i++) {
         CString str;
@@ -265,6 +270,7 @@ BOOL CPPageSubStyle::OnInitDialog()
     CreateToolTip();
     if (m_bDefaultStyle) {
         m_wndToolTip.AddTool(GetDlgItem(IDC_CHECK_RELATIVETO), ResStr(IDS_TEXT_SUB_RENDERING_TARGET));
+        m_wndToolTip.AddTool(&m_tategakiFont, ResStr(IDS_SUBSTYLE_TATEGAKI_FONT_TIP));
     }
 
     return TRUE;  // return TRUE unless you set the focus to a control
@@ -315,9 +321,10 @@ BOOL CPPageSubStyle::OnApply()
 
     if (m_bDefaultStyle) {
         STSStyle& stss = AfxGetAppSettings().subtitlesDefStyle;
-        if (stss != m_stss || s.bSubtitleRoundedOpaqueBox != !!m_bRoundedOpaqueBox) {
+        if (stss != m_stss || s.bSubtitleRoundedOpaqueBox != !!m_bRoundedOpaqueBox || s.lyricsTategakiFont != m_tategakiFontSpec) {
             AfxGetAppSettings().subtitlesDefStyle = m_stss;
             s.bSubtitleRoundedOpaqueBox = !!m_bRoundedOpaqueBox;
+            s.lyricsTategakiFont = m_tategakiFontSpec;
             if (CMainFrame* pMainFrame = AfxGetMainFrame()) {
                 pMainFrame->UpdateSubtitleRenderingParameters();
                 pMainFrame->RepaintVideo();
@@ -368,7 +375,61 @@ void CPPageSubStyle::OnChooseFont()
         }
 
         m_stss = lf;
+        // it may follow this one
+        UpdateTategakiFontButton();
 
+        SetModified();
+    }
+}
+
+void CPPageSubStyle::UpdateTategakiFontButton()
+{
+    STSStyle style = m_stss;
+    m_tategakiFontSpec.ApplyTo(style);
+    CString face = style.fontName;
+    face.TrimLeft(_T('@'));
+    if (face.GetLength() > 12) {
+        face = face.Left(10) + _T("...");
+    }
+    CString text;
+    text.Format(ResStr(IDS_SUBSTYLE_TATEGAKI_FONT), face.GetString(), style.fontSize);
+    m_tategakiFont.SetWindowText(text);
+}
+
+void CPPageSubStyle::OnChooseTategakiFont()
+{
+    CString mainFace = m_stss.fontName;
+    mainFace.TrimLeft(_T('@'));
+
+    // the dialog starts from the font the lyrics use: the tategaki one, or Font's
+    STSStyle current = m_stss;
+    current.fontName = mainFace;
+    m_tategakiFontSpec.ApplyTo(current);
+    LOGFONT lf;
+    lf <<= current;
+    // the vertical "@" faces are not listed, the lyrics use the vertical form of the face picked
+    CFontDialog dlg(&lf, CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST | CF_SCALABLEONLY | CF_NOVERTFONTS);
+    if (dlg.DoModal() == IDOK) {
+        // as the main font takes it from the dialog
+        STSStyle picked;
+        picked = lf;
+        CString face = picked.fontName;
+        face.TrimLeft(_T('@'));
+
+        CAppSettings::LyricsTategakiFont spec;
+        // the same as Font: follow it, also when it changes
+        const bool bSame = face.CompareNoCase(mainFace) == 0
+                           && std::abs(picked.fontSize - m_stss.fontSize) < 0.01
+                           && picked.fontWeight == m_stss.fontWeight
+                           && !!picked.fItalic == !!m_stss.fItalic;
+        if (!bSame) {
+            spec.face = face;
+            spec.size = picked.fontSize;
+            spec.weight = picked.fontWeight;
+            spec.italic = picked.fItalic ? 1 : 0;
+        }
+        m_tategakiFontSpec = spec;
+        UpdateTategakiFontButton();
         SetModified();
     }
 }

@@ -80,6 +80,9 @@ public:
     enum class LyricsMode { Panel = 0, Line = 1, Off = 2 };
     static LyricsMode GetLyricsMode();
     static void SetLyricsMode(LyricsMode mode);
+    // Whether the panel and the line are written vertically (縦書き), saved in the settings
+    static bool GetLyricsTategaki();
+    static void SetLyricsTategaki(bool bTategaki);
 
     // Cover art (or the logo standing in for it) in the audio-only view, saved in the settings.
     // The logo is always shown while nothing is loaded.
@@ -108,6 +111,7 @@ protected:
     // Lyrics, read from CMainFrame::m_mediaMeta while the media is loaded
     enum class LyricsView { None, Panel, Line };
     LyricsView m_lyricsView = LyricsView::None;
+    bool m_bLyricsTategaki = false;
     int m_nLyricsLine = -1;
     CRect m_rcLyrics;
     // The text, in the default subtitle style
@@ -115,8 +119,11 @@ protected:
 
     bool HasLyrics() const;
     void SplitLyricsLayout(const CRect& client, CRect& art, CRect& lyrics) const;
-    // Both draw into m_canvas, in its (client) coordinates
+    // These draw into m_canvas, in its (client) coordinates
     void DrawLyrics(const CRect& rc, const CSize& client);
+    // the panel in vertical writing, its columns going across the area right to left
+    void DrawLyricsTategaki(const CRect& rc, const CSize& client);
+    // the current line alone, placed by the style, horizontal or vertical
     void DrawLyricsLine(const CSize& client);
 
     DECLARE_MESSAGE_MAP()

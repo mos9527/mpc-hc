@@ -68,26 +68,45 @@ END_MESSAGE_MAP()
 
 void CMPCThemeFloatEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-    if (!(nChar >= '0' && nChar <= '9' || nChar == '.' || nChar == '\b' || nChar == '-')) {
+    // control characters: backspace, and Ctrl+A/C/V/X/Z, which edit controls handle as characters
+    if (nChar < 0x20) {
+        CMPCThemeEdit::OnChar(nChar, nRepCnt, nFlags);
         return;
     }
-
+    if (!(nChar >= '0' && nChar <= '9' || nChar == '.' || nChar == '-')) {
+        return;
+    }
     if (nChar == '-' && m_lower >= 0) {
         return;
     }
 
+    // Judged by the text it makes, the selection replaced by the character: the text always has a
+    // point, so judging by the text before refused a point typed over the selected one, or any
+    // typed while it is kept, leaving only whole numbers to be entered
     CString str;
     GetWindowText(str);
-
-    if (nChar == '.' && (str.Find('.') >= 0 || str.IsEmpty())) {
-        return;
-    }
-
     int nStartChar, nEndChar;
     GetSel(nStartChar, nEndChar);
+    nStartChar = std::clamp(nStartChar, 0, str.GetLength());
+    nEndChar = std::clamp(nEndChar, nStartChar, str.GetLength());
+    const CString result = str.Left(nStartChar) + TCHAR(nChar) + str.Mid(nEndChar);
 
-    if (nChar == '\b' && nStartChar <= 0) {
-        return;
+    // a number being typed: an optional leading minus, digits, at most one point
+    bool bPoint = false;
+    for (int i = 0; i < result.GetLength(); i++) {
+        const TCHAR c = result[i];
+        if (c == '-') {
+            if (i != 0) {
+                return;
+            }
+        } else if (c == '.') {
+            if (bPoint) {
+                return;
+            }
+            bPoint = true;
+        } else if (c < '0' || c > '9') {
+            return;
+        }
     }
 
     CMPCThemeEdit::OnChar(nChar, nRepCnt, nFlags);
