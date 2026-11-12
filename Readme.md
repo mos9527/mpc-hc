@@ -10,6 +10,7 @@ Builds are available from [nightly](https://nightly.link/mos9527/mpc-hc/workflow
 ## Additional Features
 
 - GitHub CI builds
+- Seamless Audio Playback support!
 - `.lrc` (embedded or external) lyrics support in Audio-only view, rendered via Internal Subtitle Renderer with expanded style settings. Shown as a panel or as subtitles, either optionally in tategaki (vertical writing, with its own font option).
 - `Floating` (shortcut: <kbd>5</kbd>, to enable and cycle) view preset for Audio-only view with multiple modes
 

@@ -108,7 +108,7 @@ BOOL CPPageOutput::OnInitDialog()
     if (s.strAudioRendererDisplayName == AUDRNDT_INTERNAL && m_iAudioRendererType == 0) {
         m_iAudioRendererType = m_iSaneAudioRendererType;
     }
-    // Opt-in prototype; unsupported media continues to use ordinary sanear.
+    // Default for new profiles; unsupported media continues to use ordinary sanear.
     m_AudioRendererDisplayNames.Add(AUDRNDT_SEAMLESS);
     m_iAudioRendererTypeCtrl.AddString(AUDRNDT_SEAMLESS);
     if (s.strAudioRendererDisplayName == AUDRNDT_SEAMLESS) {
