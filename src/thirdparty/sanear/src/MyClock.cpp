@@ -22,6 +22,10 @@ namespace SaneAudioRenderer
 
     REFERENCE_TIME MyClock::GetPrivateTime()
     {
+        // A prepared graph must not advance its clock while its PCM is staged.
+        // The prototype uses the session timeline, not legacy audio-clock slaving.
+        if (m_renderer && m_renderer->IsSeamless())
+            return m_renderer->GetSeamlessClockTime();
         CAutoLock lock(this);
 
         const int64_t oldCounterOffset = m_counterOffset;
@@ -211,7 +215,8 @@ namespace SaneAudioRenderer
 
     bool MyClock::CanDoGuidedReclock()
     {
-        return !m_renderer->IsBitstreaming() &&
+        return !m_renderer->IsSeamless() &&
+               !m_renderer->IsBitstreaming() &&
                !m_renderer->OnExternalClock() &&
                !m_renderer->IsLive();
     }

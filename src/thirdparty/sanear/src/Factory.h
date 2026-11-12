@@ -20,6 +20,8 @@ namespace SaneAudioRenderer
         static HRESULT CreateFilterAggregated(IUnknown* pOwner, const GUID& guid,
                                               ISettings* pSettings, IUnknown** ppOut);
 
+        static HRESULT CreateSeamlessFilter(ISettings* pSettings, IBaseFilter** ppOut);
+        static const GUID& GetSeamlessFilterGuid();
         static const GUID& GetFilterGuid();
     };
 }

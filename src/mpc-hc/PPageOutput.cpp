@@ -108,6 +108,12 @@ BOOL CPPageOutput::OnInitDialog()
     if (s.strAudioRendererDisplayName == AUDRNDT_INTERNAL && m_iAudioRendererType == 0) {
         m_iAudioRendererType = m_iSaneAudioRendererType;
     }
+    // Opt-in prototype; unsupported media continues to use ordinary sanear.
+    m_AudioRendererDisplayNames.Add(AUDRNDT_SEAMLESS);
+    m_iAudioRendererTypeCtrl.AddString(AUDRNDT_SEAMLESS);
+    if (s.strAudioRendererDisplayName == AUDRNDT_SEAMLESS) {
+        m_iAudioRendererType = m_iAudioRendererTypeCtrl.GetCount() - 1;
+    }
     // MPC AR
     m_AudioRendererDisplayNames.Add(AUDRNDT_MPC);
     m_iAudioRendererTypeCtrl.AddString(ResStr(IDS_PPAGE_OUTPUT_AUD_MPC_REND).GetString());
@@ -475,13 +481,19 @@ void CPPageOutput::OpenVideoRendererSettings() {
 }
 
 void CPPageOutput::OnUpdateAudioRendererSettings(CCmdUI* pCmdUI) {
-    pCmdUI->Enable(m_iAudioRendererType == m_iMPCAudioRendererType || m_iAudioRendererType == m_iSaneAudioRendererType);
+    const bool seamless = m_iAudioRendererType >= 0 && m_iAudioRendererType < m_AudioRendererDisplayNames.GetCount() &&
+        m_AudioRendererDisplayNames.GetAt(m_iAudioRendererType) == AUDRNDT_SEAMLESS;
+    pCmdUI->Enable(seamless || m_iAudioRendererType == m_iMPCAudioRendererType || m_iAudioRendererType == m_iSaneAudioRendererType);
 }
 
 void CPPageOutput::OpenAudioRendererSettings() {
+    const bool seamless = m_iAudioRendererType >= 0 && m_iAudioRendererType < m_AudioRendererDisplayNames.GetCount() &&
+        m_AudioRendererDisplayNames.GetAt(m_iAudioRendererType) == AUDRNDT_SEAMLESS;
     if (m_iAudioRendererType == m_iMPCAudioRendererType) {
         ShowPPage(CFGManager::GetMpcAudioRendererInstance);
-    } else if (m_iAudioRendererType == m_iSaneAudioRendererType) {
+    } else if (seamless || m_iAudioRendererType == m_iSaneAudioRendererType) {
+        // Device selection is shared; the prototype always uses shared mode
+        // and currently bypasses sanear's crossfeed/timestretch DSP options.
         CPPageAudioRenderer page;
         CMPCThemePropertySheet dlg(IDS_PPAGE_OUTPUT_AUDIO_RENDERER_SETTINGS, this);
         dlg.m_psh.dwFlags |= PSH_NOAPPLYNOW;

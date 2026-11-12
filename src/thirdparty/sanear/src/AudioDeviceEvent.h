@@ -54,7 +54,11 @@ namespace SaneAudioRenderer
         std::deque<DspChunk> m_buffer;
         size_t m_bufferFrames = 0;
 
+        // Protected by m_threadMutex. A WASAPI wake is only a hint: Stop/Reset
+        // can leave an already-signaled callback waiting for this lock.
+        bool m_playbackRequested = false;
         bool m_queuedStart = false;
+        bool m_loggedIdleWake = false;
 
         bool m_observeInactivity = false;
         CAMEvent m_observeInactivityWake;

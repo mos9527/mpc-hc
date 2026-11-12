@@ -163,7 +163,7 @@ void CPlaylistItem::AutoLoadFiles()
 
     CString fn = m_fns.GetHead();
 
-    if (s.fAutoloadAudio && !PathUtils::IsURL(fn) && (s.fEnableAudioSwitcher || s.SelectedAudioRenderer() != AUDRNDT_INTERNAL && s.SelectedAudioRenderer() != AUDRNDT_MPC)) {
+    if (s.fAutoloadAudio && !PathUtils::IsURL(fn) && (s.fEnableAudioSwitcher || s.SelectedAudioRenderer() != AUDRNDT_INTERNAL && s.SelectedAudioRenderer() != AUDRNDT_MPC && s.SelectedAudioRenderer() != AUDRNDT_SEAMLESS)) {
         int i = fn.ReverseFind('.');
         if (i > 0) {
             const CMediaFormats& mf = s.m_Formats;

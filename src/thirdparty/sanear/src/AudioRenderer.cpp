@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "AudioRenderer.h"
+#include "SeamlessTrace.h"
 
 #include "MyClock.h"
+#include "SeamlessSession.h"
 
 namespace SaneAudioRenderer
 {
@@ -46,6 +48,9 @@ namespace SaneAudioRenderer
         m_graphClock = pClock;
         m_isDVD = isDVD;
 
+        if (m_seamless)
+            return; // Its graph clock reads the session; never reclock or clear its device here.
+
         if (m_graphClock && !IsEqualObject(m_graphClock, m_myClock.GetOwner()))
         {
             if (!m_externalClock)
@@ -64,9 +69,118 @@ namespace SaneAudioRenderer
         m_guidedReclockActive = false;
     }
 
+    void AudioRenderer::SetVolume(float volume)
+    {
+        m_volume = volume;
+        if (m_seamless)
+            std::atomic_load(&m_session)->SetVolume(volume);
+    }
+
+    void AudioRenderer::SetBalance(float balance)
+    {
+        m_balance = balance;
+        if (m_seamless)
+            std::atomic_load(&m_session)->SetBalance(balance);
+    }
+
+    void AudioRenderer::EnableSeamless()
+    {
+        auto session = std::make_shared<SeamlessSession>(m_settings);
+        m_stream = session->CreateStream();
+        m_session = std::move(session);
+        m_seamlessClockOrigin = llMulDiv(GetPerformanceCounter(), OneSecond, GetPerformanceFrequency(), 0);
+        m_seamless = true;
+    }
+
+    bool AudioRenderer::CanChangeSeamlessFormat()
+    {
+        CAutoLock lock(this);
+        return m_seamless && !m_seamlessProcessorsReady;
+    }
+
+    HRESULT AudioRenderer::PrepareNext(AudioRenderer& next)
+    {
+        if (!m_seamless || !next.m_seamless || &next == this)
+            return E_INVALIDARG;
+        CAutoLock lock(this);
+        CAutoLock nextLock(&next);
+        if (next.m_state != State_Stopped)
+            return VFW_E_WRONG_STATE;
+        auto stream = m_session->PrepareNext(m_stream);
+        if (!stream)
+            return S_FALSE;
+        std::atomic_store(&next.m_session, m_session);
+        std::atomic_store(&next.m_stream, std::move(stream));
+        next.m_seamlessProcessorsReady = false;
+        next.SetVolume(GetVolume());
+        next.SetBalance(GetBalance());
+        return S_OK;
+    }
+
+    void AudioRenderer::CancelNext()
+    {
+        if (m_seamless)
+            m_session->CancelNext();
+    }
+
+    bool AudioRenderer::HasHandedOff()
+    {
+        return m_seamless && m_session->HandedOff(m_stream);
+    }
+
+    void AudioRenderer::ActivateSeamless()
+    {
+        if (m_seamless)
+            m_session->Play(m_stream);
+    }
+
+    void AudioRenderer::SetSeamlessOutputPaused(bool paused)
+    {
+        CAutoLock lock(this);
+        if (m_seamless)
+            m_session->SetOutputPaused(m_stream, paused);
+    }
+
+    REFERENCE_TIME AudioRenderer::GetSeamlessPosition()
+    {
+        CAutoLock lock(this);
+        return m_seamlessSegmentStart + m_session->Position(m_stream);
+    }
+
+    REFERENCE_TIME AudioRenderer::GetSeamlessClockTime()
+    {
+        CAutoLock lock(this);
+        try {
+            return m_seamlessClockOrigin + m_session->Position(m_stream);
+        } catch (...) {
+            return m_seamlessClockOrigin;
+        }
+    }
+
     bool AudioRenderer::Push(IMediaSample* pSample, AM_SAMPLE2_PROPERTIES& sampleProps, CAMEvent* pFilledEvent)
     {
         DspChunk chunk;
+        if (m_seamless) {
+            {
+                CAutoLock lock(this);
+                auto device = m_session->EnsureDevice(m_inputFormat);
+                if (!m_seamlessProcessorsReady) {
+                    m_dspMatrix.Initialize(m_inputFormat->nChannels, DspMatrix::GetChannelMask(*m_inputFormat),
+                        device->GetChannelCount(), DspMatrix::GetChannelMask(*device->GetWaveFormat()));
+                    m_dspRate.Initialize(false, m_inputFormat->nSamplesPerSec,
+                        device->GetRate(), device->GetChannelCount());
+                    m_seamlessProcessorsReady = true;
+                }
+                // PCM is concatenated by frame count. Do not introduce padding
+                // from a new file's timestamp origin (or guess encoder delay).
+                chunk = DspChunk(pSample, sampleProps, *m_inputFormat);
+                m_dspMatrix.Process(chunk);
+                m_dspRate.Process(chunk);
+                // Shared output gain is applied only when this PCM is queued
+                // to the device, not while the next track is still staged.
+            }
+            return m_session->Push(m_stream, chunk, m_flush, pFilledEvent);
+        }
 
         {
             CAutoLock objectLock(this);
@@ -157,6 +271,18 @@ namespace SaneAudioRenderer
     bool AudioRenderer::Finish(bool blockUntilEnd, CAMEvent* pFilledEvent)
     {
         DspChunk chunk;
+        if (m_seamless) {
+            if (!blockUntilEnd)
+                throw HResultException{ E_NOTIMPL }; // Dynamic media-type changes are not a track boundary.
+            {
+                CAutoLock lock(this);
+                if (m_seamlessProcessorsReady) {
+                    m_dspRate.Finish(chunk);
+                }
+            }
+            return m_session->Push(m_stream, chunk, m_flush, pFilledEvent) &&
+                   m_session->Finish(m_stream, m_flush, pFilledEvent);
+        }
 
         {
             CAutoLock objectLock(this);
@@ -236,6 +362,13 @@ namespace SaneAudioRenderer
     {
         CAutoLock objectLock(this);
 
+        if (m_seamless) {
+            m_session->Reset(m_stream);
+            m_seamlessProcessorsReady = false;
+            m_flush.Reset();
+            return;
+        }
+
         if (m_device)
         {
             if (m_state == State_Running)
@@ -278,7 +411,7 @@ namespace SaneAudioRenderer
         if (DspFormatFromWaveFormat(*inputFormat) != DspFormat::Unknown)
             return true;
 
-        if (live)
+        if (live || m_seamless)
             return false;
 
         CAutoLock objectLock(this);
@@ -295,14 +428,27 @@ namespace SaneAudioRenderer
 
         m_sampleCorrection.NewFormat(inputFormat);
 
+        if (m_seamless) {
+            m_seamlessProcessorsReady = false;
+            return;
+        }
         ClearDevice();
 
         m_bitstreaming = (DspFormatFromWaveFormat(*inputFormat) == DspFormat::Unknown);
     }
 
-    void AudioRenderer::NewSegment(double rate)
+    void AudioRenderer::NewSegment(double rate, REFERENCE_TIME startTime)
     {
         CAutoLock objectLock(this);
+
+        if (m_seamless) {
+            SeamlessTrace(L"NewSegment", static_cast<const void*>(this), L"startMs", startTime / OneMillisecond, L"rate", rate);
+            if (rate != 1.0)
+                throw HResultException{ E_NOTIMPL }; // Normal-speed prototype only.
+            m_seamlessSegmentStart = startTime;
+            m_seamlessProcessorsReady = false;
+            return;
+        }
 
         if (m_rate != rate)
         {
@@ -323,6 +469,12 @@ namespace SaneAudioRenderer
     {
         CAutoLock objectLock(this);
 
+        if (m_seamless) {
+            m_state = State_Running;
+            m_seamlessClockOrigin = startTime - m_session->Position(m_stream);
+            m_session->Play(m_stream);
+            return;
+        }
         CheckDeviceSettings();
 
         assert(m_state != State_Running);
@@ -336,6 +488,11 @@ namespace SaneAudioRenderer
     {
         CAutoLock objectLock(this);
 
+        if (m_seamless) {
+            m_session->Pause(m_stream);
+            m_state = State_Paused;
+            return;
+        }
         if (m_device)
         {
             m_myClock.UnslaveClockFromAudio();
@@ -350,6 +507,13 @@ namespace SaneAudioRenderer
     {
         CAutoLock objectLock(this);
 
+        if (m_seamless) {
+            if (!HasHandedOff())
+                m_session->Pause(m_stream);
+            m_session->Reset(m_stream);
+            m_state = State_Stopped;
+            return;
+        }
         ClearDevice();
 
         assert(m_state != State_Stopped);

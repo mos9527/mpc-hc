@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "AudioDeviceEvent.h"
+#include "SeamlessTrace.h"
 
 namespace SaneAudioRenderer
 {
@@ -54,6 +55,14 @@ namespace SaneAudioRenderer
 
         PushChunkToBuffer(chunk);
 
+        {
+            // PushChunkToBuffer has released m_bufferMutex. Keep the feeder's
+            // thread -> buffer lock order and wake only a pending initial start.
+            CAutoLock threadLock(&m_threadMutex);
+            if (m_playbackRequested && m_queuedStart)
+                m_wake.Set();
+        }
+
         if (pFilledEvent && !chunk.IsEmpty())
             pFilledEvent->Set();
     }
@@ -72,6 +81,12 @@ namespace SaneAudioRenderer
 
         if (pFilledEvent)
             pFilledEvent->Set();
+        {
+            CAutoLock threadLock(&m_threadMutex);
+            // EOS allows a partial device period to be padded and primed too.
+            if (m_playbackRequested && m_queuedStart)
+                m_wake.Set();
+        }
 
         return m_endOfStreamPos - GetPosition();
     }
@@ -102,29 +117,31 @@ namespace SaneAudioRenderer
 
     void AudioDeviceEvent::Start()
     {
-        bool delegateStart = false;
+        CAutoLock threadLock(&m_threadMutex);
+        CAutoLock renewLock(&m_renewMutex);
 
+        m_observeInactivity = false;
+        if (m_playbackRequested && !m_awaitingRenew)
+            return; // Graph activation can repeat Start on an already-running session.
+        m_playbackRequested = true;
+        m_loggedIdleWake = false;
+        if (m_awaitingRenew)
+            return;
+
+        if (m_sentFrames == 0)
         {
-            CAutoLock threadLock(&m_threadMutex);
-
-            m_observeInactivity = false;
-
-            if (m_sentFrames == 0)
-            {
-                m_queuedStart = true;
-                delegateStart = true;
-            }
-        }
-
-        if (delegateStart)
-        {
+            // Prime the client on the feeder thread. If no PCM is available
+            // yet, keep the start pending; Push/Finish will wake it again.
+            m_queuedStart = true;
             DebugOut(ClassName(this), "queue start");
             m_wake.Set();
         }
         else
         {
+            // Serialize the actual Start with Stop/Reset, not just the decision
+            // to start. Otherwise Stop can be undone after releasing this lock.
             DebugOut(ClassName(this), "start");
-            m_backend->audioClient->Start();
+            ThrowIfFailed(m_backend->audioClient->Start());
         }
     }
 
@@ -135,7 +152,9 @@ namespace SaneAudioRenderer
         {
             CAutoLock threadLock(&m_threadMutex);
 
+            m_playbackRequested = false;
             m_queuedStart = false;
+            m_loggedIdleWake = false;
 
             CAutoLock renewLock(&m_renewMutex);
 
@@ -162,6 +181,11 @@ namespace SaneAudioRenderer
 
             CAutoLock renewLock(&m_renewMutex);
 
+            // Reset invalidates the previous priming/start decision too. A
+            // subsequent Start must explicitly re-arm playback for this buffer.
+            m_playbackRequested = false;
+            m_queuedStart = false;
+            m_loggedIdleWake = false;
             if (!m_awaitingRenew)
                 m_backend->audioClient->Reset();
 
@@ -259,6 +283,16 @@ namespace SaneAudioRenderer
 
                     if (m_awaitingRenew)
                         continue;
+                    if (!m_playbackRequested) {
+                        // An event may already have been signaled or dequeued
+                        // before Stop/Reset obtained this lock. It does not mean
+                        // playback is still active; do not touch the client.
+                        if (!m_loggedIdleWake && !m_backend->exclusive && !m_backend->realtime) {
+                            SeamlessTrace(L"ignore stale device wake after Stop/Reset", static_cast<const void*>(this));
+                            m_loggedIdleWake = true;
+                        }
+                        continue;
+                    }
 
                     assert(m_sentFrames > 0 || m_queuedStart);
 
@@ -266,11 +300,16 @@ namespace SaneAudioRenderer
                     {
                         PushBufferToDevice();
 
-                        if (m_queuedStart)
+                        if (m_queuedStart && m_sentFrames > 0)
                         {
+                            // Do not start an empty client after a seek. If the
+                            // producer has not filled a device period yet, leave
+                            // this pending and let its next Push wake the feeder.
                             DebugOut(ClassName(this), "start");
-                            m_backend->audioClient->Start();
+                            ThrowIfFailed(m_backend->audioClient->Start());
                             m_queuedStart = false;
+                            if (!m_backend->exclusive && !m_backend->realtime)
+                                SeamlessTrace(L"device start after priming", static_cast<const void*>(this), L"frames", m_sentFrames);
                         }
                     }
                     catch (...)

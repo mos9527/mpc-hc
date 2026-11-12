@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "MyPin.h"
+#include "SeamlessTrace.h"
 
 #include "AudioRenderer.h"
 
@@ -30,17 +31,29 @@ namespace SaneAudioRenderer
                 pmt->cbFormat < sizeof(WAVEFORMATEX) ||
                 pmt->cbFormat != sizeof(WAVEFORMATEX) + pFormat->cbSize)
             {
+                if (m_renderer.IsSeamless())
+                    SeamlessTrace(L"pin rejects format block", L"bytes", pmt->cbFormat,
+                        L"cbSize", pFormat && pmt->cbFormat >= sizeof(WAVEFORMATEX) ? pFormat->cbSize : 0);
                 return E_INVALIDARG;
             }
 
             try
             {
-                if (m_renderer.CheckFormat(CopyWaveFormat(*pFormat), m_live))
+                const bool accepted = m_renderer.CheckFormat(CopyWaveFormat(*pFormat), m_live);
+                if (m_renderer.IsSeamless())
+                    SeamlessTrace(L"pin media type", L"accepted", accepted, L"tag", GetHexString(pFormat->wFormatTag),
+                        L"rate", pFormat->nSamplesPerSec, L"channels", pFormat->nChannels,
+                        L"bits", pFormat->wBitsPerSample, L"blockAlign", pFormat->nBlockAlign,
+                        L"formatBytes", pmt->cbFormat, L"cbSize", pFormat->cbSize);
+                if (accepted)
                     return S_OK;
             }
             catch (...)
             {
-                return exception_to_hresult();
+                const HRESULT hr = exception_to_hresult();
+                if (m_renderer.IsSeamless())
+                    SeamlessTrace(L"pin format check failed", L"HRESULT", GetHexString(hr));
+                return hr;
             }
         }
 
@@ -90,9 +103,12 @@ namespace SaneAudioRenderer
         CAutoLock objectLock(this);
 
         CBaseInputPin::NewSegment(startTime, stopTime, rate);
-        m_renderer.NewSegment(rate);
-
-        return S_OK;
+        try {
+            m_renderer.NewSegment(rate, startTime);
+            return S_OK;
+        } catch (...) {
+            return exception_to_hresult();
+        }
     }
 
     STDMETHODIMP MyPin::Receive(IMediaSample* pSample)
@@ -109,9 +125,21 @@ namespace SaneAudioRenderer
 
             if (m_SampleProps.dwSampleFlags & AM_SAMPLE_TYPECHANGED)
             {
-                // TODO: don't recreate the device when possible
-                m_renderer.Finish(false, &m_bufferFilled);
-                ReturnIfFailed(SetMediaType(static_cast<CMediaType*>(m_SampleProps.pMediaType)));
+                auto mediaType = static_cast<CMediaType*>(m_SampleProps.pMediaType);
+                CheckPointer(mediaType, E_POINTER);
+                if (m_renderer.IsSeamless()) {
+                    if (*mediaType != m_mt) {
+                        if (!m_renderer.CanChangeSeamlessFormat())
+                            return VFW_E_TYPE_NOT_ACCEPTED;
+                        ReturnIfFailed(SetMediaType(mediaType));
+                    }
+                    // Identical type announcements must not drain or reset a
+                    // continuing PCM session. First-sample refinement is safe.
+                } else {
+                    // TODO: don't recreate the device when possible
+                    m_renderer.Finish(false, &m_bufferFilled);
+                    ReturnIfFailed(SetMediaType(mediaType));
+                }
             }
 
             if (m_eosUp)
@@ -127,7 +155,15 @@ namespace SaneAudioRenderer
         }
 
         // Push() returns 'false' in case of interruption.
-        return m_renderer.Push(pSample, m_SampleProps, &m_bufferFilled) ? S_OK : S_FALSE;
+        try {
+            return m_renderer.Push(pSample, m_SampleProps, &m_bufferFilled) ? S_OK : S_FALSE;
+        } catch (...) {
+            const HRESULT hr = exception_to_hresult();
+            if (m_renderer.IsSeamless())
+                SeamlessTrace(L"renderer streaming failure", static_cast<const void*>(m_pFilter), L"HRESULT", GetHexString(hr));
+            m_pFilter->NotifyEvent(EC_ERRORABORT, hr, 0);
+            return hr;
+        }
     }
 
     STDMETHODIMP MyPin::EndOfStream()
@@ -148,7 +184,16 @@ namespace SaneAudioRenderer
 
         // We ask audio renderer to block until all samples are played.
         // Finish() returns 'false' in case of interruption.
-        bool eosDown = m_renderer.Finish(true, &m_bufferFilled);
+        bool eosDown = false;
+        try {
+            eosDown = m_renderer.Finish(true, &m_bufferFilled);
+        } catch (...) {
+            const HRESULT hr = exception_to_hresult();
+            if (m_renderer.IsSeamless())
+                SeamlessTrace(L"renderer streaming failure", static_cast<const void*>(m_pFilter), L"HRESULT", GetHexString(hr));
+            m_pFilter->NotifyEvent(EC_ERRORABORT, hr, 0);
+            return hr;
+        }
 
         {
             CAutoLock objectLock(this);

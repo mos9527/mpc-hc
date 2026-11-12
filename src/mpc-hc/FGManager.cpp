@@ -719,9 +719,22 @@ HRESULT CFGManager::Connect(IPin* pPinOut, IPin* pPinIn, bool bContinueRender)
             return hr;
         }
     } else {
-        // 1. Use IStreamBuilder
-
-        if (CComQIPtr<IStreamBuilder> pSB = pPinOut) {
+        // 1. Use IStreamBuilder, except for the Audio Switcher's legacy
+        // builder when the eligible prototype is selected: that implementation
+        // hardcodes CLSID_DSoundRender and bypasses our renderer candidates.
+        bool bypassSwitcherBuilder = false;
+        if (s.SelectedAudioRenderer() == AUDRNDT_SEAMLESS &&
+            GetCLSID(GetFilterFromPin(pPinOut)) == __uuidof(CAudioSwitcherFilter)) {
+            for (POSITION pos = m_transform.GetHeadPosition(); pos;) {
+                if (m_transform.GetNext(pos)->GetCLSID() == SaneAudioRenderer::Factory::GetSeamlessFilterGuid()) {
+                    bypassSwitcherBuilder = true;
+                    break;
+                }
+            }
+        }
+        if (bypassSwitcherBuilder) {
+            SeamlessPlayerLog(L"bypass Audio Switcher IStreamBuilder (hardcoded DirectSound); use selected prototype candidates");
+        } else if (CComQIPtr<IStreamBuilder> pSB = pPinOut) {
             if (SUCCEEDED(hr = pSB->Render(pPinOut, this))) {
                 return hr;
             }
@@ -1572,6 +1585,10 @@ STDMETHODIMP CFGManager::ConnectFilterDirect(IPin* pPinOut, IBaseFilter* pBF, co
                 && S_OK != IsPinConnected(pPin)
                 && !((s.iDSVideoRendererType != VIDRNDT_DS_EVR_CUSTOM && s.iDSVideoRendererType != VIDRNDT_DS_EVR && s.iDSVideoRendererType != VIDRNDT_DS_SYNC) && GetPinName(pPin)[0] == '~')) {
             HRESULT hr = ConnectDirect(pPinOut, pPin, pmt);
+            if (GetCLSID(pBF) == SaneAudioRenderer::Factory::GetSeamlessFilterGuid()) {
+                SeamlessPlayerLog(L"prototype pin connection: upstream=%s::%s hr=0x%08X",
+                    GetFilterName(GetFilterFromPin(pPinOut)).GetString(), GetPinName(pPinOut).GetString(), hr);
+            }
             if (SUCCEEDED(hr)) {
                 return hr;
             }
@@ -3035,6 +3052,20 @@ CFGManagerPlayer::CFGManagerPlayer(LPCWSTR pClassName, LPCWSTR pInputFileURL, HW
         bool fallback_mpcar = false;
         bool fallback_null = false;
         CString SelAudioRenderer = s.SelectedAudioRenderer();
+        if (SelAudioRenderer == AUDRNDT_SEAMLESS) {
+            CString input = pInputFileURL ? pInputFileURL : L"";
+            const CString extension = CLongPath(input).GetExtension().MakeLower();
+            const bool optical = input.GetLength() >= 3 && input[1] == L':' && input[2] == L'\\' &&
+                GetDriveType(input.Left(3)) == DRIVE_CDROM;
+            // Experimental PCM music path only. Video, compressed music,
+            // optical/network media and capture retain ordinary sanear.
+            if (IsCapture || PathUtils::IsURL(input) || PathIsNetworkPath(input) ||
+                optical || (extension != L".wav" && extension != L".flac")) {
+                SelAudioRenderer = AUDRNDT_INTERNAL;
+            }
+            SeamlessPlayerLog(L"renderer selection: requested=prototype effective=%s file=%s",
+                SelAudioRenderer.GetString(), input.GetString());
+        }
         if (SelAudioRenderer == AUDRNDT_NULL_COMP) {
             pFGF = DEBUG_NEW CFGFilterInternal<CNullAudioRenderer>(AUDRNDT_NULL_COMP, MERIT64_ABOVE_DSHOW + 2);
             pFGF->AddType(MEDIATYPE_Audio, MEDIASUBTYPE_NULL);
@@ -3056,16 +3087,25 @@ CFGManagerPlayer::CFGManagerPlayer(LPCWSTR pClassName, LPCWSTR pInputFileURL, HW
             pFGF = DEBUG_NEW CFGFilterInternal<CNullUAudioRenderer>(AUDRNDT_NULL_UNCOMP, MERIT64_ABOVE_DSHOW + 2);
             pFGF->AddType(MEDIATYPE_Audio, MEDIASUBTYPE_NULL);
             m_transform.AddTail(pFGF);
-        } else if (SelAudioRenderer == AUDRNDT_INTERNAL) {
+        } else if (SelAudioRenderer == AUDRNDT_INTERNAL || SelAudioRenderer == AUDRNDT_SEAMLESS) {
             struct SaneAudioRendererFilter : CFGFilter {
-                SaneAudioRendererFilter(CStringW name, UINT64 merit) :
-                    CFGFilter(SaneAudioRenderer::Factory::GetFilterGuid(), name, merit) {}
+                bool seamless;
+                SaneAudioRendererFilter(CStringW name, UINT64 merit, bool seamless) :
+                    CFGFilter(seamless ? SaneAudioRenderer::Factory::GetSeamlessFilterGuid() :
+                        SaneAudioRenderer::Factory::GetFilterGuid(), name, merit), seamless(seamless) {}
 
                 HRESULT Create(IBaseFilter** ppBF, CInterfaceList<IUnknown, &IID_IUnknown>&) override {
-                    return SaneAudioRenderer::Factory::CreateFilter(AfxGetAppSettings().sanear, ppBF);
+                    const HRESULT hr = seamless ? SaneAudioRenderer::Factory::CreateSeamlessFilter(AfxGetAppSettings().sanear, ppBF) :
+                        SaneAudioRenderer::Factory::CreateFilter(AfxGetAppSettings().sanear, ppBF);
+                    if (AfxGetAppSettings().SelectedAudioRenderer() == AUDRNDT_SEAMLESS)
+                        SeamlessPlayerLog(L"renderer factory: prototype=%d hr=0x%08X filter=%p", seamless, hr,
+                            SUCCEEDED(hr) && ppBF ? *ppBF : nullptr);
+                    return hr;
                 }
             };
-            pFGF = DEBUG_NEW SaneAudioRendererFilter(AUDRNDT_SANEAR, renderer_merit + 0x50);
+            const bool seamless = SelAudioRenderer == AUDRNDT_SEAMLESS;
+            pFGF = DEBUG_NEW SaneAudioRendererFilter(seamless ? AUDRNDT_SEAMLESS : AUDRNDT_SANEAR,
+                renderer_merit + 0x50, seamless);
             pFGF->AddType(MEDIATYPE_Audio, MEDIASUBTYPE_NULL);
             m_transform.AddTail(pFGF);
             fallback_ds = true;

@@ -15,6 +15,7 @@ namespace SaneAudioRenderer
         , public CBaseFilter
         , public ISpecifyPropertyPages2
         , public IStatusPageData
+        , public ISeamlessAudioRenderer
     {
     public:
 
@@ -43,6 +44,13 @@ namespace SaneAudioRenderer
         STDMETHODIMP CreatePage(const GUID& guid, IPropertyPage** ppPage) override;
 
         STDMETHODIMP GetPageData(bool resize, std::vector<char>& data) override;
+
+        STDMETHODIMP PrepareNext(ISeamlessAudioRenderer* next) override;
+        STDMETHODIMP_(void) CancelNext() override;
+        STDMETHODIMP_(BOOL) HasHandedOff() override;
+        STDMETHODIMP Activate() override;
+        STDMETHODIMP GetPlaybackPosition(REFERENCE_TIME* position) override;
+        STDMETHODIMP SetOutputPaused(BOOL paused) override;
 
     private:
 

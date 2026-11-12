@@ -65,6 +65,21 @@ namespace SaneAudioRenderer
         return result;
     }
 
+    HRESULT Factory::CreateSeamlessFilter(ISettings* pSettings, IBaseFilter** ppOut)
+    {
+        CheckPointer(ppOut, E_POINTER);
+        *ppOut = nullptr;
+        IUnknownPtr unknown;
+        ReturnIfFailed(CreateFilterAggregated(nullptr, GetSeamlessFilterGuid(), pSettings, &unknown));
+        return unknown->QueryInterface(IID_PPV_ARGS(ppOut));
+    }
+
+    const GUID& Factory::GetSeamlessFilterGuid()
+    {
+        static const GUID guid = {0x513a8b4a, 0xe4bc, 0x45e8, {0x9e, 0x54, 0xbb, 0x04, 0x9e, 0x6a, 0x2f, 0x59}};
+        return guid;
+    }
+
     const GUID& Factory::GetFilterGuid()
     {
         static const GUID guid = {0x2AE00773, 0x819A, 0x40FB, {0xA5, 0x54, 0x54, 0x82, 0x7E, 0x11, 0x63, 0x59}};

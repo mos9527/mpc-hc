@@ -2505,6 +2505,8 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
                         g_bExternalSubtitleTime = false;
                         if (m_pGB && m_pMS) {
                             m_pMS->GetCurrentPosition(&rtNow);
+                            if (m_pSeamlessRenderer)
+                                m_pSeamlessRenderer->GetPlaybackPosition(&rtNow);
                             if (!m_pGB || !m_pMS) {
                                 // can happen extremely rarely based on crash dump
                                 // no idea how, since closing of graph is initiated from this same thread
@@ -2621,6 +2623,7 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
             break;
         case TIMER_STREAMPOSPOLLER2:
             if (GetLoadState() == MLS::LOADED) {
+                UpdateSeamlessNext();
                 switch (GetPlaybackMode()) {
                     case PM_FILE:
                     // no break
@@ -3319,6 +3322,21 @@ void CMainFrame::GraphEventComplete()
 {
     CAppSettings& s = AfxGetAppSettings();
 
+    CPlaylistItem next(true);
+    CString reason;
+    const bool eligible = GetSeamlessNext(next, &reason);
+    const bool handedOff = m_pSeamlessRenderer && m_pSeamlessRenderer->HasHandedOff();
+    m_bSeamlessAutoAdvance = handedOff && m_pSeamlessNextGraph && eligible &&
+        next.m_id == m_seamlessNextId && next.m_fns.GetHead() == m_seamlessNextFile;
+    if (m_pSeamlessRenderer || s.SelectedAudioRenderer() == AUDRNDT_SEAMLESS) {
+        SeamlessPlayerLog(L"audible EOF: renderer=%p handedOff=%d prepared=%d adopt=%d nextId=%u reason=%s current=%s",
+            m_pSeamlessRenderer.p, handedOff, !!m_pSeamlessNextGraph, m_bSeamlessAutoAdvance,
+            m_seamlessNextId, reason.IsEmpty() ? L"eligible" : reason.GetString(),
+            lastOpenFile.GetString());
+    }
+    if (!m_bSeamlessAutoAdvance)
+        CancelSeamlessNext();
+
     auto* pMRU = &s.MRU;
 
     if (m_bRememberFilePos) {
@@ -3442,6 +3460,7 @@ LRESULT CMainFrame::OnGraphNotify(WPARAM wParam, LPARAM lParam)
                 }
                 break;
             case EC_COMPLETE:
+                m_bSeamlessAdoptedComplete = false;
                 UpdateCachedMediaState();
                 GraphEventComplete();
                 break;
@@ -3824,6 +3843,10 @@ LRESULT CMainFrame::OnGraphNotify(WPARAM wParam, LPARAM lParam)
     }
 
     m_ActiveGraphNotifyEvCode = 0;
+    // Prepared graphs can have a backlog when a notification window is first
+    // attached. Drain it one scoped callback at a time; an empty callback stops.
+    if (evCode != 0 && m_pSeamlessRenderer && m_pME && lParam == (LPARAM)m_pME.p)
+        PostMessage(WM_GRAPHNOTIFY, 0, (LPARAM)m_pME.p);
     return hr;
 }
 
@@ -4552,7 +4575,7 @@ LRESULT CMainFrame::OnFilePostOpenmedia(WPARAM wParam, LPARAM lParam)
     m_bSettingUpMenus = true;
 
     SetLoadState(MLS::LOADED);
-    ASSERT(GetMediaStateDirect() == State_Stopped);
+    ASSERT(m_bSeamlessAdopting || GetMediaStateDirect() == State_Stopped);
 
     // destroy invisible top-level d3dfs window if there is no video renderer
     if (HasDedicatedFSVideoWindow() && !m_pMFVDC && !m_pVMRWC && !m_pVW) {
@@ -4769,11 +4792,21 @@ LRESULT CMainFrame::OnFilePostOpenmedia(WPARAM wParam, LPARAM lParam)
         }
     }
 
+    m_bSeamlessAdopting = false;
+    const bool adoptedComplete = m_bSeamlessAdoptedComplete;
+    m_bSeamlessAdoptedComplete = false;
+    if (adoptedComplete)
+        GraphEventComplete();
+    else if (m_pSeamlessRenderer && m_pME)
+        PostMessage(WM_GRAPHNOTIFY, 0, (LPARAM)m_pME.p);
     return 0;
 }
 
 LRESULT CMainFrame::OnOpenMediaFailed(WPARAM wParam, LPARAM lParam)
 {
+    CancelSeamlessNext();
+    m_bSeamlessAdopting = false;
+    m_bSeamlessAdoptedComplete = false;
     ASSERT(GetLoadState() == MLS::LOADING);
     SetLoadState(MLS::FAILING);
 
@@ -10206,10 +10239,15 @@ void CMainFrame::OnPlayPlay()
             if (m_fEndOfStream) {
                 SendMessage(WM_COMMAND, ID_PLAY_STOP);
             }
-            if (m_pMS) {
+            if (m_pMS && !(m_bSeamlessAdopting && m_pSeamlessRenderer)) {
                 if (FAILED(m_pMS->SetRate(m_dSpeedRate))) {
                     m_dSpeedRate = 1.0;
                 }
+            } else if (m_bSeamlessAdopting && m_pSeamlessRenderer) {
+                // The preroll graph is already running at 1.0. SetRate can seek
+                // and flush it even when the value is unchanged, destroying the
+                // output continuity that the session has just established.
+                SeamlessPlayerLog(L"adoption: retain running graph rate; skip redundant SetRate");
             }
         } else if (GetPlaybackMode() == PM_DVD) {
             m_dSpeedRate = 1.0;
@@ -10375,6 +10413,8 @@ void CMainFrame::OnPlayStop()
 
 void CMainFrame::OnPlayStop(bool is_closing)
 {
+    if (!is_closing)
+        CancelSeamlessNext();
     m_timerOneTime.Unsubscribe(TimerOneTimeSubscriber::DELAY_PLAYPAUSE_AFTER_AUTOCHANGE_MODE);
     m_bOpeningInAutochangedMonitorMode = false;
     m_bPausedForAutochangeMonitorMode = false;
@@ -10797,6 +10837,10 @@ void CMainFrame::OnUpdatePlaySeek(CCmdUI* pCmdUI)
 
 void CMainFrame::SetPlayingRate(double rate)
 {
+    if (m_pSeamlessRenderer && rate != 1.0) {
+        m_OSD.DisplayMessage(OSD_TOPRIGHT, L"Seamless prototype supports normal speed only");
+        return;
+    }
     if (GetLoadState() != MLS::LOADED) {
         return;
     }
@@ -13281,6 +13325,13 @@ bool CMainFrame::MediaControlRun(bool waitforcompletion)
                 ASSERT(m_CachedFilterState == State_Running);
             }
         };
+        if (GetLoadState() == MLS::LOADED && m_pSeamlessRenderer) {
+            const HRESULT hr = m_pSeamlessRenderer->SetOutputPaused(FALSE);
+            if (FAILED(hr)) {
+                SeamlessPlayerLog(L"host resume failed: hr=0x%08X", hr);
+                return false;
+            }
+        }
         MediaTransportControlUpdateState(State_Running);
         return true;
     }
@@ -13299,6 +13350,13 @@ bool CMainFrame::MediaControlPause(bool waitforcompletion)
                 m_CachedFilterState = -1;
                 m_pMC->GetState(0, &m_CachedFilterState);
                 ASSERT(m_CachedFilterState == State_Paused);
+            }
+        }
+        if (GetLoadState() == MLS::LOADED && m_pSeamlessRenderer) {
+            const HRESULT hr = m_pSeamlessRenderer->SetOutputPaused(TRUE);
+            if (FAILED(hr)) {
+                SeamlessPlayerLog(L"host pause failed: hr=0x%08X", hr);
+                return false;
             }
         }
         MediaTransportControlUpdateState(State_Paused);
@@ -14865,6 +14923,27 @@ bool PathIsOnOpticalDisc(CString path)
 }
 
 // Called from GraphThread
+static HRESULT FindSeamlessRenderer(IGraphBuilder* graph,
+    SaneAudioRenderer::ISeamlessAudioRenderer** renderer)
+{
+    if (!graph || !renderer)
+        return E_POINTER;
+    *renderer = nullptr;
+    BeginEnumFilters(graph, pEF, filter) {
+        CComQIPtr<SaneAudioRenderer::ISeamlessAudioRenderer> control = filter;
+        if (control) {
+            int inputs, outputs, connectedInputs, connectedOutputs;
+            CountPins(filter, inputs, outputs, connectedInputs, connectedOutputs);
+            if (connectedInputs > 0) {
+                *renderer = control.Detach();
+                return S_OK;
+            }
+        }
+    }
+    EndEnumFilters;
+    return E_NOINTERFACE;
+}
+
 void CMainFrame::OpenCreateGraphObject(OpenMediaData* pOMD)
 {
     ASSERT(m_pGB == nullptr);
@@ -14922,14 +15001,45 @@ void CMainFrame::OpenCreateGraphObject(OpenMediaData* pOMD)
         m_fCustomGraph = m_fShockwaveGraph;
 
         if (!m_fCustomGraph) {
-            CFGManagerPlayer* fgm = DEBUG_NEW CFGManagerPlayer(_T("CFGManagerPlayer"), firstfilename, m_pVideoWnd->m_hWnd);
-            if (!pOpenFileData->useragent.IsEmpty()) {
-                fgm->SetUserAgent(pOpenFileData->useragent);
+            if (m_bSeamlessAutoAdvance && m_pSeamlessNextGraph && firstfilename == m_seamlessNextFile) {
+                SeamlessPlayerLog(L"adopting prepared graph: graph=%p file=%s", m_pSeamlessNextGraph.p, firstfilename.GetString());
+                m_pGB = m_pSeamlessNextGraph;
+                m_pSeamlessRenderer = m_pSeamlessNextRenderer;
+                m_bSeamlessAdoptedComplete = m_bSeamlessNextCompleted;
+                m_bSeamlessNextCompleted = false;
+                // Drain construction/preroll events before installing the active
+                // notification window. Preserve audible completion of short tracks.
+                CComQIPtr<IMediaEventEx> events = m_pGB;
+                long code;
+                LONG_PTR p1, p2;
+                while (events && SUCCEEDED(events->GetEvent(&code, &p1, &p2, 0))) {
+                    events->FreeEventParams(code, p1, p2);
+                    if (code == EC_COMPLETE)
+                        m_bSeamlessAdoptedComplete = true;
+                    else if (code == EC_ERRORABORT)
+                        throw (UINT)IDS_GRAPH_INTERFACES_ERROR;
+                }
+                m_pSeamlessNextGraph.Release();
+                m_pSeamlessNextRenderer.Release();
+                m_seamlessNextFile.Empty();
+                m_seamlessNextId = m_seamlessAttemptId = 0;
+                m_bSeamlessAutoAdvance = false;
+                m_bSeamlessAdopting = true;
+                m_bUseSeekPreview = false;
+                if (FAILED(m_pSeamlessRenderer->Activate()))
+                    throw (UINT)IDS_GRAPH_INTERFACES_ERROR;
+            } else {
+                if (s.SelectedAudioRenderer() == AUDRNDT_SEAMLESS)
+                    SeamlessPlayerLog(L"building fresh graph (no adopted handoff): file=%s", firstfilename.GetString());
+                CFGManagerPlayer* fgm = DEBUG_NEW CFGManagerPlayer(_T("CFGManagerPlayer"), firstfilename, m_pVideoWnd->m_hWnd);
+                if (!pOpenFileData->useragent.IsEmpty()) {
+                    fgm->SetUserAgent(pOpenFileData->useragent);
+                }
+                if (!pOpenFileData->referrer.IsEmpty()) {
+                    fgm->SetReferrer(pOpenFileData->referrer);
+                }
+                m_pGB = fgm;
             }
-            if (!pOpenFileData->referrer.IsEmpty()) {
-                fgm->SetReferrer(pOpenFileData->referrer);
-            }
-            m_pGB = fgm;
 
             if (m_pGB && m_bUseSeekPreview) {
                 // build graph for preview
@@ -15401,7 +15511,9 @@ void CMainFrame::OpenFile(OpenFileData* pOFD)
         }
 #endif
 
-        if (E_NOTIMPL == rarHR) {
+        if (bMainFile && m_bSeamlessAdopting) {
+            hr = S_OK; // The prepared graph is connected and already feeding the session.
+        } else if (E_NOTIMPL == rarHR) {
             hr = m_pGB->RenderFile(fn, nullptr);
         } else {
             hr = rarHR;
@@ -15722,6 +15834,21 @@ void CMainFrame::OpenFile(OpenFileData* pOFD)
     SetupChapters();
 
     SetPlaybackMode(PM_FILE);
+    m_pSeamlessRenderer.Release();
+    const HRESULT seamlessHr = FindSeamlessRenderer(m_pGB, &m_pSeamlessRenderer);
+    m_seamlessEligibilityLog.Empty();
+    if (s.SelectedAudioRenderer() == AUDRNDT_SEAMLESS) {
+        SeamlessPlayerLog(L"opened: file=%s graph=%p renderer=%p findHr=0x%08X audioOnly=%d adopting=%d selected=%s",
+            lastOpenFile.GetString(), m_pGB.p, m_pSeamlessRenderer.p, seamlessHr, m_fAudioOnly,
+            m_bSeamlessAdopting, s.SelectedAudioRenderer().GetString());
+        BeginEnumFilters(m_pGB, pEF, filter) {
+            int inputs, outputs, connectedInputs, connectedOutputs;
+            CountPins(filter, inputs, outputs, connectedInputs, connectedOutputs);
+            if (connectedInputs > 0 && outputs == 0)
+                SeamlessPlayerLog(L"connected sink: %s", GetFilterName(filter).GetString());
+        }
+        EndEnumFilters;
+    }
 }
 
 void CMainFrame::SetupExternalChapters()
@@ -16392,7 +16519,7 @@ void CMainFrame::OpenCustomizeGraph()
 
     const CAppSettings& s = AfxGetAppSettings();
     const CRenderersSettings& r = s.m_RenderersSettings;
-    if (r.m_AdvRendSets.bSynchronizeVideo && s.iDSVideoRendererType == VIDRNDT_DS_SYNC) {
+    if (!m_pSeamlessRenderer && r.m_AdvRendSets.bSynchronizeVideo && s.iDSVideoRendererType == VIDRNDT_DS_SYNC) {
         HRESULT hr = S_OK;
         m_pRefClock = DEBUG_NEW CSyncClockFilter(nullptr, &hr);
 
@@ -17531,7 +17658,7 @@ bool CMainFrame::OpenMediaPrivate(CAutoPtr<OpenMediaData> pOMD)
             }
 
             auto* pMRU = &AfxGetAppSettings().MRU;
-            if (pMRU->rfe_array.GetCount()) {
+            if (pMRU->rfe_array.GetCount() && !m_bSeamlessAdopting) {
                 if (!rtPos && m_bRememberFilePos) {
                     rtPos = pMRU->GetCurrentFilePosition();
                     if (rtPos >= rtDur || rtDur - rtPos < 50000000LL) {
@@ -17652,7 +17779,7 @@ bool CMainFrame::OpenMediaPrivate(CAutoPtr<OpenMediaData> pOMD)
 
         int audstm; // offset in audio track menu, AudioSwitcher adds an "Options" entry above the audio tracks
         audstm = SetupAudioStreams();
-        if (audstm >= 0) {
+        if (audstm >= 0 && !m_bSeamlessAdopting) {
             OnPlayAudio(ID_AUDIO_SUBITEM_START + audstm);
         }
         checkAborted();
@@ -20485,6 +20612,10 @@ void CMainFrame::DoSeekTo(REFERENCE_TIME rtPos, bool bShowOSD /*= true*/)
         return;
     }
     OAFilterState fs = GetMediaState();
+    if (m_pSeamlessRenderer)
+        SeamlessPlayerLog(L"seek requested: targetMs=%lld state=%d; invalidate old preroll before flushing current PCM",
+            rtPos / 10000, (int)fs);
+    CancelSeamlessNext();
 
     if (rtPos < 0) {
         rtPos = 0;
@@ -21189,6 +21320,218 @@ bool CMainFrame::CanPreviewUse() {
         && (GetPlaybackMode() == PM_DVD || GetPlaybackMode() == PM_FILE));
 }
 
+bool CMainFrame::GetSeamlessNext(CPlaylistItem& item, CString* reason)
+{
+    const auto& s = AfxGetAppSettings();
+    auto reject = [reason](LPCWSTR message) {
+        if (reason)
+            *reason = message;
+        return false;
+    };
+    if (reason)
+        reason->Empty();
+    if (s.SelectedAudioRenderer() != AUDRNDT_SEAMLESS)
+        return reject(L"prototype renderer not selected");
+    if (!m_pSeamlessRenderer)
+        return reject(L"connected graph has no seamless renderer (fallback or unsupported file)");
+    if (!m_fAudioOnly || GetPlaybackMode() != PM_FILE)
+        return reject(L"current graph is not audio-only file playback");
+    if (s.bShufflePlaylistItems)
+        return reject(L"shuffle enabled; lookahead currently supports sequential order only");
+    if (s.eLoopMode != CAppSettings::LoopMode::PLAYLIST)
+        return reject(L"repeat mode is FILE, not PLAYLIST");
+    if (abRepeat)
+        return reject(L"A-B repeat active");
+    if (m_dSpeedRate != 1.0)
+        return reject(L"playback speed is not 1.0");
+    if (s.iReplayGainMode != 0)
+        return reject(L"ReplayGain enabled; staged gain setup not implemented");
+    if (s.fAudioTimeShift)
+        return reject(L"audio time-shift option enabled");
+    if (s.nCLSwitches & CLSW_AFTERPLAYBACK_MASK)
+        return reject(L"command-line after-playback action overrides playlist advance");
+    if (!s.fLoopForever && m_nLoops >= s.nLoops)
+        return reject(L"configured repeat count exhausted");
+    auto eligible = [&](const CPlaylistItem& entry) {
+        if (entry.m_type != CPlaylistItem::file || entry.m_fInvalid || entry.m_bYoutubeDL ||
+            entry.m_cue || entry.m_fns.GetCount() != 1)
+            return reject(L"playlist entry is invalid, device, yt-dlp, CUE, or has multiple files");
+        CString file = entry.m_fns.GetHead();
+        const CString ext = CLongPath(file).GetExtension().MakeLower();
+        if (PathUtils::IsURL(file) || PathIsNetworkPath(file) || PathIsOnOpticalDisc(file))
+            return reject(L"entry is not a local non-optical file");
+        if (ext != L".wav" && ext != L".flac")
+            return reject(L"entry is not WAV/FLAC");
+        return true;
+    };
+    auto& playlist = m_wndPlaylistBar.m_pl;
+    POSITION pos = playlist.GetPos();
+    if (!pos)
+        return reject(L"playlist has no current item");
+    if (!eligible(playlist.GetAt(pos)))
+        return false;
+    playlist.GetNext(pos); // Look ahead without changing the playing row or shuffle state.
+    while (pos && playlist.GetAt(pos).m_fInvalid)
+        playlist.GetNext(pos);
+    // Prototype does not preload a wrap-around or a different playback mode.
+    if (!pos)
+        return reject(L"no next sequential item (playlist wrap-around not implemented)");
+    if (!eligible(playlist.GetAt(pos)))
+        return false;
+    item = playlist.GetAt(pos);
+    return true;
+}
+
+void CMainFrame::CancelSeamlessNext(bool advanceInterruptedHandoff)
+{
+    CDeferredActionScope actionScope(*this);
+    const bool handedOff = m_pSeamlessRenderer && m_pSeamlessRenderer->HasHandedOff();
+    const bool interrupted = advanceInterruptedHandoff && handedOff && GetMediaState() == State_Running;
+    if (m_pSeamlessNextGraph || handedOff)
+        SeamlessPlayerLog(L"cancel preroll: next=%s handedOff=%d fallbackAdvance=%d", m_seamlessNextFile.GetString(),
+            handedOff, interrupted);
+    if (m_pSeamlessRenderer)
+        m_pSeamlessRenderer->CancelNext();
+    if (m_pSeamlessNextGraph) {
+        CComQIPtr<IMediaControl> control = m_pSeamlessNextGraph;
+        if (control)
+            control->Stop(); // Unblocks the bounded preroll Receive/EOS waits.
+    }
+    m_pSeamlessNextRenderer.Release();
+    m_pSeamlessNextGraph.Release();
+    m_seamlessNextFile.Empty();
+    m_seamlessNextId = 0;
+    m_seamlessAttemptId = 0;
+    m_bSeamlessNextCompleted = false;
+    m_bSeamlessAutoAdvance = false;
+    // Once PCM has been committed, playlist edits cannot retract samples that
+    // are already in WASAPI. Interrupt and fall back to normal navigation;
+    // do not leave an EOF graph waiting for a canceled successor forever.
+    if (interrupted)
+        GraphEventComplete();
+}
+
+void CMainFrame::UpdateSeamlessNext()
+{
+    if (m_bSeamlessAdopting || m_bSeamlessAutoAdvance)
+        return;
+    if (AfxGetAppSettings().SelectedAudioRenderer() != AUDRNDT_SEAMLESS && !m_pSeamlessRenderer) {
+        m_seamlessEligibilityLog.Empty();
+        return;
+    }
+    CPlaylistItem next(true);
+    CString reason;
+    const bool eligible = GetSeamlessNext(next, &reason);
+    CString diagnostic;
+    if (eligible)
+        diagnostic.Format(L"eligible: next=%u %s", next.m_id, next.m_fns.GetHead().GetString());
+    else
+        diagnostic = L"preload disabled: " + reason;
+    if (diagnostic != m_seamlessEligibilityLog) {
+        SeamlessPlayerLog(L"%s; current=%s", diagnostic.GetString(), lastOpenFile.GetString());
+        m_seamlessEligibilityLog = diagnostic;
+    }
+    if (!eligible) {
+        CancelSeamlessNext(true);
+        return;
+    }
+    if (m_seamlessNextId == next.m_id && m_seamlessNextFile == next.m_fns.GetHead()) {
+        CComQIPtr<IMediaEventEx> events = m_pSeamlessNextGraph;
+        long code;
+        LONG_PTR p1, p2;
+        while (events && SUCCEEDED(events->GetEvent(&code, &p1, &p2, 0))) {
+            events->FreeEventParams(code, p1, p2);
+            if (code == EC_COMPLETE)
+                m_bSeamlessNextCompleted = true;
+            if (code == EC_ERRORABORT) {
+                SeamlessPlayerLog(L"preroll EC_ERRORABORT: hr=0x%08X file=%s", (HRESULT)p1, m_seamlessNextFile.GetString());
+                CancelSeamlessNext(true);
+                m_seamlessAttemptId = next.m_id;
+                break;
+            }
+        }
+        return;
+    }
+    if (GetMediaState() != State_Running || m_seamlessAttemptId == next.m_id)
+        return;
+    const bool interrupted = m_pSeamlessRenderer->HasHandedOff();
+    CancelSeamlessNext(true);
+    if (interrupted)
+        return;
+    m_seamlessAttemptId = next.m_id;
+    // Keep preparation in the graph's UI apartment; the custom control interface
+    // has no COM proxy. The existing device feeder keeps playing, and preparation
+    // must not mutate the active OpenMediaPrivate state.
+    CComPtr<IGraphBuilder2> graph;
+    HRESULT hr = E_FAIL;
+    const ULONGLONG started = GetTickCount64();
+    LPCWSTR stage = L"create graph";
+    SeamlessPlayerLog(L"preroll begin: nextId=%u file=%s", next.m_id, next.m_fns.GetHead().GetString());
+    try {
+        graph = DEBUG_NEW CFGManagerPlayer(L"Seamless preroll", next.m_fns.GetHead(), m_wndView.GetSafeHwnd());
+        stage = L"RenderFile";
+        hr = graph->RenderFile(next.m_fns.GetHead(), nullptr);
+        SeamlessPlayerLog(L"preroll RenderFile: hr=0x%08X elapsed=%llums graph=%p", hr, GetTickCount64() - started, graph.p);
+        CComPtr<SaneAudioRenderer::ISeamlessAudioRenderer> renderer;
+        if (SUCCEEDED(hr)) {
+            stage = L"find connected seamless renderer";
+            hr = FindSeamlessRenderer(graph, &renderer);
+            SeamlessPlayerLog(L"preroll renderer: hr=0x%08X renderer=%p", hr, renderer.p);
+        }
+        bool videoConnected = false;
+        if (SUCCEEDED(hr) && renderer) {
+            BeginEnumFilters(graph, pEF, pBF) {
+                BeginEnumPins(pBF, pEP, pin) {
+                    CMediaType mediaType;
+                    if (SUCCEEDED(pin->ConnectionMediaType(&mediaType)) && mediaType.majortype == MEDIATYPE_Video)
+                        videoConnected = true;
+                }
+                EndEnumPins;
+            }
+            EndEnumFilters;
+            stage = videoConnected ? L"reject connected video" : L"attach successor session";
+            if (videoConnected)
+                hr = VFW_E_TYPE_NOT_ACCEPTED;
+            else
+                hr = m_pSeamlessRenderer->PrepareNext(renderer);
+            SeamlessPlayerLog(L"preroll attach: hr=0x%08X videoConnected=%d", hr, videoConnected);
+        }
+        if (hr == S_OK && renderer) {
+            CComQIPtr<IMediaFilter> filter = graph;
+            CComQIPtr<IReferenceClock> clock = renderer;
+            CComQIPtr<IMediaControl> control = graph;
+            if (!filter || !clock || !control)
+                hr = E_NOINTERFACE;
+            else {
+                stage = L"set preroll clock";
+                hr = filter->SetSyncSource(clock);
+                if (SUCCEEDED(hr)) {
+                    m_pSeamlessNextGraph = graph;
+                    m_pSeamlessNextRenderer = renderer;
+                    m_seamlessNextId = next.m_id;
+                    m_seamlessNextFile = next.m_fns.GetHead();
+                    stage = L"run staged graph";
+                    hr = control->Run(); // Silent, bounded PCM preroll into the staged adapter.
+                    SeamlessPlayerLog(L"preroll Run: hr=0x%08X elapsed=%llums", hr, GetTickCount64() - started);
+                }
+            }
+        }
+    } catch (...) {
+        hr = E_FAIL;
+    }
+    if (FAILED(hr) || !m_pSeamlessNextGraph) {
+        CancelSeamlessNext();
+        m_seamlessAttemptId = next.m_id; // Do not retry a failed file every 500ms.
+        if (graph) {
+            CComQIPtr<IMediaControl> control = graph;
+            if (control)
+                control->Stop();
+        }
+    }
+    SeamlessPlayerLog(L"preroll result: stage=%s hr=0x%08X stored=%d elapsed=%llums file=%s",
+        stage, hr, !!m_pSeamlessNextGraph, GetTickCount64() - started, next.m_fns.GetHead().GetString());
+}
+
 void CMainFrame::OpenCurPlaylistItem(REFERENCE_TIME rtStart, bool reopen /* = false */, ABRepeat abRepeat /* = ABRepeat() */)
 {
     if (IsPlaylistEmpty()) {
@@ -21318,6 +21661,13 @@ void CMainFrame::OpenMediaInternal(CAutoPtr<OpenMediaData> pOMD)
     }
     m_bOpenMediaActive = true;
 
+    m_bSeamlessAdopting = false;
+    if (!m_bSeamlessAutoAdvance || !pFileData || pFileData->fns.GetCount() != 1 ||
+        pFileData->fns.GetHead() != m_seamlessNextFile || pFileData->rtStart != 0 ||
+        pFileData->abRepeat || m_rtReloadPos >= 0 || s.SelectedAudioRenderer() != AUDRNDT_SEAMLESS) {
+        CancelSeamlessNext();
+    }
+
     // the one place the close runs directly: the wrapper holds the scope, and the
     // open needs the close to have finished before it continues
     if (m_eMediaLoadState == MLS::LOADED || m_eMediaLoadState == MLS::LOADING || m_eMediaLoadState == MLS::FAILING) {
@@ -21386,7 +21736,17 @@ void CMainFrame::OpenMediaInternal(CAutoPtr<OpenMediaData> pOMD)
 
     // use the graph thread only for some media types
     bool bDirectShow = pFileData && !pFileData->fns.IsEmpty() && s.m_Formats.GetEngine(pFileData->fns.GetHead()) == DirectShow;
-    bool bUseThread = m_pGraphThread && s.fEnableWorkerThreadForOpening && (bDirectShow || !pFileData) && (s.iDefaultCaptureDevice == 1 || !pDeviceData);  
+    bool bUseThread = m_pGraphThread && s.fEnableWorkerThreadForOpening && (bDirectShow || !pFileData) && (s.iDefaultCaptureDevice == 1 || !pDeviceData);
+    // The first seamless prototype keeps both graph filters in the same
+    // apartment. Its custom in-process control interface has no COM proxy.
+    if (s.SelectedAudioRenderer() == AUDRNDT_SEAMLESS && pFileData && !pFileData->fns.IsEmpty()) {
+        CString file = pFileData->fns.GetHead();
+        const CString extension = CLongPath(file).GetExtension().MakeLower();
+        if (!PathUtils::IsURL(file) && !PathIsNetworkPath(file) && !PathIsOnOpticalDisc(file) &&
+            (extension == L".wav" || extension == L".flac")) {
+            bUseThread = false;
+        }
+    }
     if (bUseThread && (!m_pGraphThread->m_hThread || m_pGraphThread->hr_coinit != S_OK)) {
         if (USE_LOGGER(s)) {
             PLAYER_LOG(_T("CMainFrame::OpenMedia - graph thread init error (0x%08X) - proceeding without worker thread"), m_pGraphThread->hr_coinit);
@@ -21567,6 +21927,15 @@ void CMainFrame::CloseMedia(bool bNextIsQueued/* = false*/, bool bPendingFileDel
 void CMainFrame::CloseMediaInternal(bool bNextIsQueued/* = false*/, bool bPendingFileDelete/* = false*/)
 {
     auto& s = AfxGetAppSettings();
+
+    if (m_pSeamlessRenderer || s.SelectedAudioRenderer() == AUDRNDT_SEAMLESS)
+        SeamlessPlayerLog(L"close current graph: preserveOutput=%d nextQueued=%d prepared=%p current=%s",
+            bNextIsQueued && m_bSeamlessAutoAdvance, bNextIsQueued, m_pSeamlessNextGraph.p, lastOpenFile.GetString());
+    if (!bNextIsQueued || !m_bSeamlessAutoAdvance)
+        CancelSeamlessNext();
+    m_pSeamlessRenderer.Release();
+    m_bSeamlessAdopting = false;
+    m_bSeamlessAdoptedComplete = false;
 
     bool hibernating = (m_dwLastPause == 1ULL);
     m_dwLastPause = 0ULL;

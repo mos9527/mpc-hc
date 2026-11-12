@@ -25,6 +25,9 @@
     <ClCompile Include="src\AudioRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="src\SeamlessSession.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
     <ClCompile Include="src\DspCrossfeed.cpp">
       <Filter>Processors</Filter>
     </ClCompile>
@@ -101,6 +104,12 @@
       <Filter>Processors</Filter>
     </ClInclude>
     <ClInclude Include="src\AudioRenderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SeamlessSession.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SeamlessTrace.h">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\DspCrossfeed.h">

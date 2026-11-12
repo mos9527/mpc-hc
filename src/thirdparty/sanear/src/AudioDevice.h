@@ -71,6 +71,7 @@ namespace SaneAudioRenderer
 
         bool IsExclusive() const { return m_backend->exclusive; }
         bool IsRealtime()  const { return m_backend->realtime; }
+        bool IsEventMode() const { return m_backend->eventMode; }
 
         bool IgnoredSystemChannelMixer() const { return m_backend->ignoredSystemChannelMixer; }
 

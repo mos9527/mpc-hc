@@ -17,6 +17,8 @@
 namespace SaneAudioRenderer
 {
     class MyClock;
+    class SeamlessSession;
+    struct SeamlessStream;
 
     class AudioRenderer final
         : public CCritSec
@@ -30,6 +32,17 @@ namespace SaneAudioRenderer
 
         void SetClock(IReferenceClock* pClock, bool isDVD = false);
 
+        void EnableSeamless();
+        bool IsSeamless() const { return m_seamless; }
+        bool CanChangeSeamlessFormat();
+        HRESULT PrepareNext(AudioRenderer& next);
+        void CancelNext();
+        bool HasHandedOff();
+        void ActivateSeamless();
+        void SetSeamlessOutputPaused(bool paused);
+        REFERENCE_TIME GetSeamlessPosition();
+        REFERENCE_TIME GetSeamlessClockTime();
+
         bool Push(IMediaSample* pSample, AM_SAMPLE2_PROPERTIES& sampleProps, CAMEvent* pFilledEvent);
         bool Finish(bool blockUntilEnd, CAMEvent* pFilledEvent);
 
@@ -39,16 +52,16 @@ namespace SaneAudioRenderer
         bool CheckFormat(SharedWaveFormat inputFormat, bool live);
         void SetFormat(SharedWaveFormat inputFormat, bool live);
 
-        void NewSegment(double rate);
+        void NewSegment(double rate, REFERENCE_TIME startTime = 0);
 
         void Play(REFERENCE_TIME startTime);
         void Pause();
         void Stop();
 
         float GetVolume() const { return m_volume; }
-        void SetVolume(float volume) { m_volume = volume; }
+        void SetVolume(float volume);
         float GetBalance() const { return m_balance; }
-        void SetBalance(float balance) { m_balance = balance; }
+        void SetBalance(float balance);
 
         SharedWaveFormat GetInputFormat();
         const AudioDevice* GetAudioDevice();
@@ -149,5 +162,12 @@ namespace SaneAudioRenderer
         bool m_guidedReclockActive = false;
 
         size_t m_dropNextFrames = 0;
+
+        bool m_seamless = false; // Immutable after filter initialization.
+        bool m_seamlessProcessorsReady = false;
+        std::shared_ptr<SeamlessSession> m_session;
+        std::shared_ptr<SeamlessStream> m_stream;
+        std::atomic<REFERENCE_TIME> m_seamlessClockOrigin = 0;
+        std::atomic<REFERENCE_TIME> m_seamlessSegmentStart = 0;
     };
 }

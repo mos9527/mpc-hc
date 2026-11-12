@@ -155,6 +155,7 @@ enum MCE_RAW_INPUT {
 #define AUDRNDT_INTERNAL        _T("Internal Audio Renderer") // Use this as device name for SaneAR
 #define AUDRNDT_SANEAR          _T("SaneAR Audio Renderer") // This only as title
 #define AUDRNDT_MPC             L"MPC Audio Renderer"
+#define AUDRNDT_SEAMLESS        L"Seamless Audio Renderer (Prototype)"
 
 
 #define DEFAULT_SUBTITLE_PATHS  _T(".;.\\subtitles;.\\subs")

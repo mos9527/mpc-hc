@@ -113,6 +113,8 @@
     <ClInclude Include="src\DspMatrix.h" />
     <ClInclude Include="src\DspChunk.h" />
     <ClInclude Include="src\AudioRenderer.h" />
+    <ClInclude Include="src\SeamlessSession.h" />
+    <ClInclude Include="src\SeamlessTrace.h" />
     <ClInclude Include="src\DspTempo.h" />
     <ClInclude Include="src\DspVolume.h" />
     <ClInclude Include="src\Interfaces.h" />
@@ -154,6 +156,7 @@
     <ClCompile Include="src\MyPin.cpp" />
     <ClCompile Include="src\DspRate.cpp" />
     <ClCompile Include="src\AudioRenderer.cpp" />
+    <ClCompile Include="src\SeamlessSession.cpp" />
     <ClCompile Include="src\Settings.cpp" />
     <ClCompile Include="src\SampleCorrection.cpp" />
   </ItemGroup>

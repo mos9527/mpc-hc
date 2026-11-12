@@ -25,6 +25,7 @@
 #include "winddk/devioctl.h"
 #include "winddk/ntddcdrm.h"
 #include "DSUtil.h"
+#include "../thirdparty/sanear/src/Interfaces.h"
 #include "PathUtils.h"
 #include "Mpeg2Def.h"
 #include <emmintrin.h>
@@ -134,6 +135,16 @@ bool IsAudioWaveRenderer(IBaseFilter* pBF)
 {
     int nIn, nOut, nInC, nOutC;
     CountPins(pBF, nIn, nOut, nInC, nOutC);
+
+    // Audio Switcher calls this BEFORE connecting its output. The generic
+    // connected-pin check below cannot recognize a new renderer at that point,
+    // and the legacy CLSID allowlist does not include the opt-in prototype.
+    // Recognize its explicit capability without accepting arbitrary unconnected
+    // IBasicAudio filters. Media-type and allocator checks still run on the pin.
+    if (nIn == 1 && nOut == 0 &&
+        CComQIPtr<SaneAudioRenderer::ISeamlessAudioRenderer>(pBF)) {
+        return true;
+    }
 
     if (nInC > 0 && nOut == 0 && CComQIPtr<IBasicAudio>(pBF)) {
         BeginEnumPins(pBF, pEP, pPin) {

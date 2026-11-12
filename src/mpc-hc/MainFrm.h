@@ -260,6 +260,25 @@ private:
     // TODO: wrap these graph objects into a class to make it look cleaner
 
     CComPtr<IGraphBuilder2> m_pGB;
+
+    // Opt-in local WAV/FLAC lookahead. The visible graph stays in m_pGB;
+    // the prepared graph decodes silently into the same persistent output session.
+    CComPtr<SaneAudioRenderer::ISeamlessAudioRenderer> m_pSeamlessRenderer;
+    CComPtr<IGraphBuilder2> m_pSeamlessNextGraph;
+    CComPtr<SaneAudioRenderer::ISeamlessAudioRenderer> m_pSeamlessNextRenderer;
+    CString m_seamlessNextFile;
+    UINT m_seamlessNextId = 0;
+    UINT m_seamlessAttemptId = 0;
+    bool m_bSeamlessAutoAdvance = false;
+    bool m_bSeamlessAdopting = false;
+    bool m_bSeamlessNextCompleted = false;
+    bool m_bSeamlessAdoptedComplete = false;
+    CString m_seamlessEligibilityLog;
+
+    void UpdateSeamlessNext();
+    void CancelSeamlessNext(bool advanceInterruptedHandoff = false);
+    bool GetSeamlessNext(CPlaylistItem& item, CString* reason = nullptr);
+
     CComQIPtr<IMediaControl> m_pMC;
     CComQIPtr<IMediaEventEx> m_pME;
     CComQIPtr<IVideoWindow> m_pVW;

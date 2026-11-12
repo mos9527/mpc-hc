@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "AudioDeviceManager.h"
+#include "SeamlessTrace.h"
 
 #include "AudioDeviceEvent.h"
 #include "AudioDevicePush.h"
@@ -49,15 +50,26 @@ namespace SaneAudioRenderer
             });
         }
 
-        UINT32 GetDevicePropertyUint(IPropertyStore* pStore, REFPROPERTYKEY key)
+        UINT32 GetDevicePropertyUint(IPropertyStore* pStore, REFPROPERTYKEY key,
+                                     UINT32 fallback, bool allowBoolean = false)
         {
             assert(pStore);
 
+            // Endpoint metadata is optional: GetValue can succeed with VT_EMPTY
+            // when a driver omits a property. Never read a different union arm
+            // just because the HRESULT succeeded (including in Release builds).
             PROPVARIANT prop;
             PropVariantInit(&prop);
-            ThrowIfFailed(pStore->GetValue(key, &prop));
-            assert(prop.vt == VT_UI4);
-            UINT32 ret = prop.uintVal;
+            const HRESULT hr = pStore->GetValue(key, &prop);
+            UINT32 ret = fallback;
+            if (SUCCEEDED(hr) && prop.vt == VT_UI4) {
+                ret = prop.ulVal;
+            } else if (SUCCEEDED(hr) && allowBoolean && prop.vt == VT_BOOL) {
+                ret = prop.boolVal != VARIANT_FALSE;
+            } else {
+                DebugOut("optional endpoint property", key.pid, "HRESULT", GetHexString(hr),
+                         "VARTYPE", prop.vt, "using fallback", fallback);
+            }
             PropVariantClear(&prop);
 
             return ret;
@@ -135,14 +147,15 @@ namespace SaneAudioRenderer
             static const PROPERTYKEY formFactorKey = { // PKEY_AudioEndpoint_FormFactor
                 {0x1da5d803, 0xd492, 0x4edd, {0x8c, 0x23, 0xe0, 0xc0, 0xff, 0xee, 0x7f, 0x0e}}, 0
             };
-            backend.endpointFormFactor = GetDevicePropertyUint(devicePropertyStore, formFactorKey);
+            backend.endpointFormFactor = GetDevicePropertyUint(devicePropertyStore, formFactorKey,
+                                                               UnknownFormFactor);
 
             static const PROPERTYKEY supportsEventModeKey = { // PKEY_AudioEndpoint_Supports_EventDriven_Mode
                 {0x1da5d803, 0xd492, 0x4edd, {0x8c, 0x23, 0xe0, 0xc0, 0xff, 0xee, 0x7f, 0x0e}}, 7
             };
             backend.supportsSharedEventMode = true;
             backend.supportsExclusiveEventMode = backend.supportsSharedEventMode &&
-                                                 GetDevicePropertyUint(devicePropertyStore, supportsEventModeKey);
+                GetDevicePropertyUint(devicePropertyStore, supportsEventModeKey, FALSE, true);
 
             ThrowIfFailed(device->Activate(__uuidof(IAudioClient),
                                            CLSCTX_INPROC_SERVER, nullptr, (void**)&backend.audioClient));
@@ -181,7 +194,7 @@ namespace SaneAudioRenderer
 
         HRESULT CreateAudioDeviceBackend(IMMDeviceEnumerator* pEnumerator,
                                          SharedWaveFormat format, bool realtime, ISettings* pSettings,
-                                         std::shared_ptr<AudioDeviceBackend>& backend)
+                                         std::shared_ptr<AudioDeviceBackend>& backend, bool sharedEventMode)
         {
             assert(pEnumerator);
             assert(format);
@@ -357,7 +370,8 @@ namespace SaneAudioRenderer
                     }
                 }
 
-                backend->eventMode = (realtime && backend->supportsSharedEventMode) ||
+                backend->eventMode = ((realtime || (sharedEventMode && !backend->exclusive)) &&
+                                      backend->supportsSharedEventMode) ||
                                      (backend->exclusive && backend->supportsExclusiveEventMode);
 
                 {
@@ -603,19 +617,24 @@ namespace SaneAudioRenderer
     }
 
     std::unique_ptr<AudioDevice> AudioDeviceManager::CreateDevice(SharedWaveFormat format, bool realtime,
-                                                                  ISettings* pSettings)
+                                                                  ISettings* pSettings, bool sharedEventMode)
     {
         assert(format);
         assert(pSettings);
 
         std::shared_ptr<AudioDeviceBackend> backend;
 
-        m_function = [&] { return CreateAudioDeviceBackend(m_enumerator, format, realtime, pSettings, backend); };
+        m_function = [&] {
+            return CreateAudioDeviceBackend(m_enumerator, format, realtime, pSettings, backend, sharedEventMode);
+        };
         m_wake.Set();
         m_done.Wait();
 
-        if (FAILED(m_result))
+        if (FAILED(m_result)) {
+            if (sharedEventMode)
+                SeamlessTrace(L"backend initialization failed", L"HRESULT", GetHexString(m_result));
             return nullptr;
+        }
 
         try
         {

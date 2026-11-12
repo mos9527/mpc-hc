@@ -637,6 +637,9 @@ void SetAudioRenderer(int AudioDevNo)
     dispnames.Add(AUDRNDT_NULL_COMP);
     dispnames.Add(AUDRNDT_NULL_UNCOMP);
     devcount += 2;
+    // Append to preserve existing /audiorenderer numeric selections.
+    dispnames.Add(AUDRNDT_SEAMLESS);
+    devcount++;
 
     if (AudioDevNo >= 1 && AudioDevNo <= devcount) {
         AfxGetMyApp()->m_AudioRendererDisplayName_CL = dispnames[AudioDevNo - 1];

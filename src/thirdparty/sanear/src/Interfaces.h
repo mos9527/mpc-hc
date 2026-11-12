@@ -1,6 +1,7 @@
 #pragma once
 
 #include <comdef.h>
+#include <dshow.h>
 #include <ocidl.h>
 
 namespace SaneAudioRenderer
@@ -48,6 +49,19 @@ namespace SaneAudioRenderer
         STDMETHOD_(void, GetTimestretchSettings)(UINT32* puTimestretchMethod) = 0;
     };
     _COM_SMARTPTR_TYPEDEF(ISettings, __uuidof(ISettings));
+
+    // In-process prototype control surface; never exposed by legacy sanear.
+    struct __declspec(uuid("86434F93-C478-4B06-B447-CE0D5267332C"))
+    ISeamlessAudioRenderer : IUnknown
+    {
+        STDMETHOD(PrepareNext)(ISeamlessAudioRenderer* next) = 0;
+        STDMETHOD_(void, CancelNext)() = 0;
+        STDMETHOD_(BOOL, HasHandedOff)() = 0;
+        STDMETHOD(Activate)() = 0;
+        STDMETHOD(GetPlaybackPosition)(REFERENCE_TIME* position) = 0;
+        // Explicit host transport intent, unlike a filter's shutdown Pause.
+        STDMETHOD(SetOutputPaused)(BOOL paused) = 0;
+    };
 
     struct __declspec(uuid("03481710-D73E-4674-839F-03EDE2D60ED8"))
     ISpecifyPropertyPages2 : ISpecifyPropertyPages

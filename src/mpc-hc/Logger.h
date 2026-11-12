@@ -22,6 +22,7 @@
 
 #include "PathUtils.h"
 #include "mplayerc.h"
+#include <cstdarg>
 
 enum class LogTargets {
     PLAYER    =  1,
@@ -158,3 +159,25 @@ private:
 #define USE_GRAPH_LOGGER(s) (s.DebugLogMask & (int)LogTargets::GRAPH)
 
 #define FLUSH_LOGGER() _flushall()
+
+// Keep lifecycle diagnostics available during debugging or explicit player
+// logging, without formatting them on every normal playback transition.
+inline void SeamlessPlayerLog(LPCWSTR format, ...)
+{
+    const bool debugging = !!IsDebuggerPresent();
+    const bool fileLogging = !!USE_LOGGER(AfxGetAppSettings());
+    if (!debugging && !fileLogging)
+        return;
+
+    CStringW message;
+    va_list args;
+    va_start(args, format);
+    message.FormatV(format, args);
+    va_end(args);
+    CStringW line;
+    line.Format(L"[Seamless] tick=%llu tid=%lu %s", GetTickCount64(), GetCurrentThreadId(), message.GetString());
+    if (debugging)
+        OutputDebugStringW(line + L"\n");
+    if (fileLogging)
+        PLAYER_LOG(L"%s", line.GetString());
+}

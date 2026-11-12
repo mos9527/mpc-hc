@@ -43,6 +43,9 @@ namespace SaneAudioRenderer
             if (SUCCEEDED(result))
                 m_renderer = std::make_unique<AudioRenderer>(pSettings, *m_clock, result);
 
+            if (SUCCEEDED(result) && m_clsid == Factory::GetSeamlessFilterGuid())
+                m_renderer->EnableSeamless();
+
             if (SUCCEEDED(result))
                 m_basicAudio = std::make_unique<MyBasicAudio>(GetOwner(), *m_renderer);
 
@@ -77,6 +80,9 @@ namespace SaneAudioRenderer
         if (riid == IID_IMediaSeeking)
             return m_seeking->QueryInterface(riid, ppv);
 
+        if (riid == __uuidof(ISeamlessAudioRenderer) && m_renderer->IsSeamless())
+            return GetInterface(static_cast<ISeamlessAudioRenderer*>(this), ppv);
+
         if (riid == __uuidof(ISpecifyPropertyPages2))
             return GetInterface(static_cast<ISpecifyPropertyPages2*>(this), ppv);
 
@@ -87,6 +93,65 @@ namespace SaneAudioRenderer
             return GetInterface(static_cast<IStatusPageData*>(this), ppv);
 
         return CBaseFilter::NonDelegatingQueryInterface(riid, ppv);
+    }
+
+    STDMETHODIMP MyFilter::PrepareNext(ISeamlessAudioRenderer* next)
+    {
+        CheckPointer(next, E_POINTER);
+        try {
+            CComPtr<IBaseFilter> nextFilter;
+            ReturnIfFailed(next->QueryInterface(IID_PPV_ARGS(&nextFilter)));
+            CLSID clsid;
+            ReturnIfFailed(nextFilter->GetClassID(&clsid));
+            if (clsid != Factory::GetSeamlessFilterGuid())
+                return E_NOINTERFACE;
+            // This interface is deliberately in-process and implemented only
+            // by this factory, not by arbitrary registered third-party filters.
+            return m_renderer->PrepareNext(*static_cast<MyFilter*>(next)->m_renderer);
+        } catch (...) {
+            return exception_to_hresult();
+        }
+    }
+
+    STDMETHODIMP_(void) MyFilter::CancelNext()
+    {
+        m_renderer->CancelNext();
+    }
+
+    STDMETHODIMP_(BOOL) MyFilter::HasHandedOff()
+    {
+        return m_renderer->HasHandedOff();
+    }
+
+    STDMETHODIMP MyFilter::Activate()
+    {
+        try {
+            m_renderer->ActivateSeamless();
+            return S_OK;
+        } catch (...) {
+            return exception_to_hresult();
+        }
+    }
+
+    STDMETHODIMP MyFilter::SetOutputPaused(BOOL paused)
+    {
+        try {
+            m_renderer->SetSeamlessOutputPaused(!!paused);
+            return S_OK;
+        } catch (...) {
+            return exception_to_hresult();
+        }
+    }
+
+    STDMETHODIMP MyFilter::GetPlaybackPosition(REFERENCE_TIME* position)
+    {
+        CheckPointer(position, E_POINTER);
+        try {
+            *position = m_renderer->GetSeamlessPosition();
+            return S_OK;
+        } catch (...) {
+            return exception_to_hresult();
+        }
     }
 
     int MyFilter::GetPinCount()
