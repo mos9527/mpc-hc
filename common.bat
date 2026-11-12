@@ -47,6 +47,8 @@ IF NOT EXIST "%MPCHC_MSYS%" (
 )
 
 SET "PATH=%MPCHC_MSYS%\usr\bin;%MPCHC_MSYS%\bin;%MPCHC_MINGW32%\bin;%PATH%"
+REM Native Windows Python must stay ahead of MSYS2's python for our build hooks.
+IF DEFINED MPCHC_PYTHON FOR %%P IN ("%MPCHC_PYTHON%") DO SET "PATH=%%~dpP;%PATH%"
 EXIT /B
 
 :SubDoesExist

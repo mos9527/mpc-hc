@@ -463,7 +463,11 @@ def cmd_build(args):
         f'call "{lav_bat}" {args.type} x64 Release {args.toolchain}',
     ])
     print(f"building LAV Filters x64 Release ({args.toolchain}), this takes a while...", flush=True)
-    rc = subprocess.run(steps, cwd=ROOT, shell=True).returncode
+    env = os.environ.copy()
+    # common.bat's GCC setup prepends MSYS2, whose Python cannot use Windows
+    # paths/APIs. Keep this native interpreter first for downstream patch hooks.
+    env["MPCHC_PYTHON"] = sys.executable
+    rc = subprocess.run(steps, cwd=ROOT, shell=True, env=env).returncode
     if rc != 0:
         die(f"build failed (exit code {rc})")
     print(f"done; next: python ci/prebuilt.py publish --dry-run")
