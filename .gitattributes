@@ -1,3 +1,4 @@
 *.sh text eol=lf
 *.po text eol=crlf
+src/thirdparty/LAVFilters/patches/*.patch text eol=lf whitespace=-blank-at-eol
 src/mpc-hc/mpc-hc.rc text working-tree-encoding=UTF-16LE-BOM eol=crlf

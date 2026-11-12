@@ -7,8 +7,8 @@ published as an asset of a GitHub release in this repository, and downloaded
 by CI.
 
 The release tag is derived from the git tree of src/thirdparty/LAVFilters. That
-tree covers LAV's build scripts and the pinned commits of every submodule the
-LAV build uses, so any change to what would be built yields a new tag and CI
+tree covers LAV's build scripts, our managed downstream patches, and the pinned
+commits of every submodule the LAV build uses, so any change yields a new tag and CI
 refuses to run with a stale bundle.
 
   python ci/prebuilt.py key        print the tag the current checkout needs
@@ -58,6 +58,10 @@ PDB_ASSET = "prebuilt-x64-pdb.zip"
 METADATA = "prebuilt.json"
 # Bump when the layout of the bundle changes, so old releases are not picked up
 FORMAT = 1
+
+# Downstream fixes live in this repository, outside the upstream submodule.
+sys.path.insert(0, str(ROOT / LAV_DIR))
+import apply_patches as lav_patches
 
 # What must be in LAVFilters64 for the player to load the internal LAV Filters
 REQUIRED = [
@@ -182,8 +186,8 @@ def gh(*args, check=True):
 
 # ---------------------------------------------------------------- publish
 
-def check_sources():
-    """The LAV build output must come from exactly the pinned, unmodified sources."""
+def check_sources(*, require_patches=True):
+    """Require pinned sources plus exactly our tracked patches, never arbitrary edits."""
     st = git("submodule", "status", "--recursive", "--", LAV_DIR).splitlines()
     if not st:
         die(f"no submodules found under {LAV_DIR}; run 'git submodule update --init --recursive'")
@@ -192,12 +196,28 @@ def check_sources():
         die("LAV Filters submodules are not checked out at their pinned commits "
             "(- = not initialized, + = different commit, U = conflict):\n  " + "\n  ".join(bad) +
             "\nrun 'git submodule update --init --recursive' and rebuild")
-    dirty = git("status", "--porcelain", "--ignore-submodules=untracked", "--", LAV_DIR)
+    try:
+        lav_patches.verify_sources(require_applied=require_patches, git_executable=find_git())
+    except (lav_patches.PatchError, OSError) as error:
+        die(str(error))
+    # The LAV worktree may contain exactly the managed patch, verified above.
+    # Check every other nested repository separately so ignoring that one dirty
+    # submodule never masks edits in FFmpeg or an external library.
+    for line in st:
+        match = re.match(r"^[ +\-U]?([0-9a-f]+) (.+?)(?: \(.+\))?$", line)
+        if not match:
+            die(f"cannot parse submodule status: {line}")
+        path = match.group(2)
+        if path == LAV_SRC:
+            continue
+        changes = git("status", "--porcelain", "--ignore-submodules=all", cwd=ROOT / path)
+        if changes:
+            die(f"{path} has unmanaged changes:\n{changes}")
+    dirty = git("status", "--porcelain", "--ignore-submodules=dirty", "--", LAV_DIR)
     if dirty:
-        # show what changed: a rewrite with the same content (line endings, BOM) looks the same in --porcelain
         diff = git("diff", "--stat", "--", LAV_DIR, check=False)
-        die(f"{LAV_DIR} has uncommitted changes, which the release tag would not reflect:\n{dirty}\n\n{diff}\n\n"
-            f"inspect with 'git diff -- {LAV_DIR}', discard with 'git restore -- {LAV_DIR}'")
+        die(f"{LAV_DIR} has uncommitted wrapper/patch changes, which the release tag would not reflect:\n"
+            f"{dirty}\n\n{diff}\n\ninspect with 'git diff -- {LAV_DIR}'")
 
 
 def lav_describe():
@@ -414,7 +434,7 @@ def cmd_build(args):
     Inside mpc-hc.sln that is a project dependency of LAVFilters; calling
     build_lavfilters.bat on its own skips it, so it is built here first.
     """
-    check_sources()
+    check_sources(require_patches=False)
     if args.toolchain == "GCC":
         check_gcc_toolchain()
     if args.toolchain == "MSVC":

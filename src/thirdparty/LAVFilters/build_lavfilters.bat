@@ -118,6 +118,13 @@ SET "BIN_DIR=%ROOT_DIR%\bin"
 
 CALL "%COMMON%" :SubParseConfig
 
+REM Apply our tracked downstream fixes for either toolchain. Never change the
+REM upstream submodule pin or discard unrelated source edits. Clean is read-only.
+IF /I NOT "%BUILDTYPE%" == "Clean" (
+  python "%FILE_DIR%apply_patches.py" apply
+  IF !ERRORLEVEL! NEQ 0 EXIT /B 1
+)
+
 IF /I "%ARCH%" == "Both" (
   SET "ARCH=x86" & CALL :Main
   SET "ARCH=x64" & CALL :Main

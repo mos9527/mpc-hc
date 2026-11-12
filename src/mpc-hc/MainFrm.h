@@ -261,7 +261,7 @@ private:
 
     CComPtr<IGraphBuilder2> m_pGB;
 
-    // Opt-in local WAV/FLAC lookahead. The visible graph stays in m_pGB;
+    // Opt-in local WAV/FLAC/M4A/MP3 lookahead. The visible graph stays in m_pGB;
     // the prepared graph decodes silently into the same persistent output session.
     CComPtr<SaneAudioRenderer::ISeamlessAudioRenderer> m_pSeamlessRenderer;
     CComPtr<IGraphBuilder2> m_pSeamlessNextGraph;

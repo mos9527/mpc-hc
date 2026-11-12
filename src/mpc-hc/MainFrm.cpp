@@ -21360,8 +21360,8 @@ bool CMainFrame::GetSeamlessNext(CPlaylistItem& item, CString* reason)
         const CString ext = CLongPath(file).GetExtension().MakeLower();
         if (PathUtils::IsURL(file) || PathIsNetworkPath(file) || PathIsOnOpticalDisc(file))
             return reject(L"entry is not a local non-optical file");
-        if (ext != L".wav" && ext != L".flac")
-            return reject(L"entry is not WAV/FLAC");
+        if (ext != L".wav" && ext != L".flac" && ext != L".m4a" && ext != L".mp3")
+            return reject(L"entry is not WAV/FLAC/M4A/MP3 (raw AAC has no reliable gapless metadata)");
         return true;
     };
     auto& playlist = m_wndPlaylistBar.m_pl;
@@ -21743,7 +21743,7 @@ void CMainFrame::OpenMediaInternal(CAutoPtr<OpenMediaData> pOMD)
         CString file = pFileData->fns.GetHead();
         const CString extension = CLongPath(file).GetExtension().MakeLower();
         if (!PathUtils::IsURL(file) && !PathIsNetworkPath(file) && !PathIsOnOpticalDisc(file) &&
-            (extension == L".wav" || extension == L".flac")) {
+            (extension == L".wav" || extension == L".flac" || extension == L".m4a" || extension == L".mp3")) {
             bUseThread = false;
         }
     }

@@ -3057,10 +3057,12 @@ CFGManagerPlayer::CFGManagerPlayer(LPCWSTR pClassName, LPCWSTR pInputFileURL, HW
             const CString extension = CLongPath(input).GetExtension().MakeLower();
             const bool optical = input.GetLength() >= 3 && input[1] == L':' && input[2] == L'\\' &&
                 GetDriveType(input.Left(3)) == DRIVE_CDROM;
-            // Experimental PCM music path only. Video, compressed music,
+            // Experimental decoded-PCM music path. M4A and tagged MP3 can
+            // retain priming/padding metadata; raw ADTS cannot. Other containers,
             // optical/network media and capture retain ordinary sanear.
             if (IsCapture || PathUtils::IsURL(input) || PathIsNetworkPath(input) ||
-                optical || (extension != L".wav" && extension != L".flac")) {
+                optical || (extension != L".wav" && extension != L".flac" &&
+                    extension != L".m4a" && extension != L".mp3")) {
                 SelAudioRenderer = AUDRNDT_INTERNAL;
             }
             SeamlessPlayerLog(L"renderer selection: requested=prototype effective=%s file=%s",

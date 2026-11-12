@@ -2,6 +2,11 @@
 <!-- Applies to every project under this directory, the LAV submodule's included.
      DSUtilLite's pre-build step (common\genversion.bat) needs MSYS and bash; genversion.cmd does the same in cmd. -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Also cover direct builds of the upstream solution/project, not only our wrapper. -->
+  <Target Name="ApplyMpcHcLavPatches" BeforeTargets="PrepareForBuild"
+          Condition="'$(MSBuildProjectName)'=='LAVSplitter' And '$(DesignTimeBuild)'!='true'">
+    <Exec Command="python &quot;$(MSBuildThisFileDirectory)apply_patches.py&quot; apply" />
+  </Target>
   <ItemDefinitionGroup Condition="'$(MSBuildProjectName)'=='DSUtilLite'">
     <PreBuildEvent>
       <Command>call "$(MSBuildThisFileDirectory)genversion.cmd"</Command>

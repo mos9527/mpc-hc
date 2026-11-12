@@ -1,0 +1,24 @@
+diff --git a/demuxer/Demuxers/LAVFDemuxer.cpp b/demuxer/Demuxers/LAVFDemuxer.cpp
+index 51bf1ae3..188e3124 100644
+--- a/demuxer/Demuxers/LAVFDemuxer.cpp
++++ b/demuxer/Demuxers/LAVFDemuxer.cpp
+@@ -1638,9 +1638,17 @@ STDMETHODIMP CLAVFDemuxer::GetNextPacket(Packet **ppPacket)
+         if (!pPacket)
+             return E_OUTOFMEMORY;
+ 
++        // Standalone MP3 priming is sample-exact in the stream time base.
++        // Round-tripping its origin through AVFormatContext's microseconds can
++        // leave the first valid decoded PCM slightly negative (e.g. -3 ticks
++        // at 44.1 kHz). LAVAudio then drops the entire queued output buffer.
++        // Use the exact origin for MP3 files, not arbitrary MP3 tracks in A/V
++        // containers, where the common format origin must be retained.
++        const int64_t startTime = stream->codecpar->codec_id == AV_CODEC_ID_MP3 &&
++            _stricmp(m_pszInputFormat, "mp3") == 0 ? stream->start_time : AV_NOPTS_VALUE;
+         // Convert timestamps to reference time and set them on the packet
+-        REFERENCE_TIME pts = ConvertTimestampToRT(pkt.pts, stream->time_base.num, stream->time_base.den);
+-        REFERENCE_TIME dts = ConvertTimestampToRT(pkt.dts, stream->time_base.num, stream->time_base.den);
++        REFERENCE_TIME pts = ConvertTimestampToRT(pkt.pts, stream->time_base.num, stream->time_base.den, startTime);
++        REFERENCE_TIME dts = ConvertTimestampToRT(pkt.dts, stream->time_base.num, stream->time_base.den, startTime);
+         REFERENCE_TIME duration = ConvertTimestampToRT(pkt.duration, stream->time_base.num, stream->time_base.den, 0);
+ 
+         pPacket->rtPTS = pts;
