@@ -222,14 +222,13 @@ void CMainFrame::OnLyricsDock(UINT id)
         GetWindowRect(m_undockedLyricsRect);
         m_bWasSnapped = false;
 
-        // Floating normally strips WS_THICKFRAME. Windows needs it for the
-        // system resize loop, which we constrain to the dock's inner edge.
-        m_bLyricsDockAddedSizingFrame = (GetStyle() & WS_THICKFRAME) == 0;
-        if (m_bLyricsDockAddedSizingFrame) {
-            ModifyStyle(0, WS_THICKFRAME);
+        // Floating is normally frameless. Remove any caption or sizing frame
+        // the user enabled before docking so Windows cannot paint it on activation changes.
+        m_undockedLyricsFrameStyle = GetStyle() & (WS_CAPTION | WS_THICKFRAME);
+        if (m_undockedLyricsFrameStyle) {
+            ModifyStyle(m_undockedLyricsFrameStyle, 0, SWP_FRAMECHANGED);
         }
         UpdateFloatingOutline();
-        SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
     }
     ApplyLyricsDock();
 }
@@ -260,13 +259,15 @@ void CMainFrame::UndockLyrics(const CPoint* dragPoint)
     }
 
     CRect rect = m_undockedLyricsRect;
+    if (dragPoint) {
+        GetWindowRect(rect);
+    }
     m_undockedLyricsRect.SetRectEmpty();
-    if (m_bLyricsDockAddedSizingFrame) {
-        ModifyStyle(WS_THICKFRAME, 0);
-        m_bLyricsDockAddedSizingFrame = false;
+    if (m_undockedLyricsFrameStyle) {
+        ModifyStyle(0, m_undockedLyricsFrameStyle, SWP_FRAMECHANGED);
+        m_undockedLyricsFrameStyle = 0;
     }
     UpdateFloatingOutline();
-    SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
     m_lyricsDockMonitor = nullptr;
     m_bResizingLyricsDock = false;
 
@@ -342,8 +343,8 @@ LRESULT CMainFrame::GetLyricsDockResizeHit(CPoint point) const
     if (!rect.PtInRect(point)) {
         return HTNOWHERE;
     }
-    // Include a small part of the client area so the inner edge works over a
-    // transparent background, even when the frame's resize border is invisible.
+    // Give the child view a resize target inside the frameless client area,
+    // including when the background passes other mouse input through.
     switch (DockSettings().Edge()) {
         case ID_LYRICS_DOCK_TOP:    return rect.bottom - point.y <= m_dpi.ScaleY(14) ? HTBOTTOM : HTNOWHERE;
         case ID_LYRICS_DOCK_BOTTOM: return point.y - rect.top < m_dpi.ScaleY(14) ? HTTOP : HTNOWHERE;

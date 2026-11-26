@@ -309,7 +309,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 
     ON_MESSAGE_VOID(WM_SAVESETTINGS, SaveAppSettings)
 
-    ON_WM_NCCALCSIZE()
     ON_WM_NCHITTEST()
 
     ON_WM_HSCROLL()
@@ -3932,28 +3931,11 @@ void CMainFrame::SaveAppSettings()
     }
 }
 
-void CMainFrame::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
-{
-    // Keep the whole dock as client area. WS_THICKFRAME still lets Windows run
-    // its resize loop when the dock's inner edge returns a sizing hit test.
-    if (!IsLyricsDocked()) {
-        __super::OnNcCalcSize(bCalcValidRects, lpncsp);
-    }
-}
-
 LRESULT CMainFrame::OnNcHitTest(CPoint point)
 {
-    LRESULT nHitTest = __super::OnNcHitTest(point);
-    if (IsLyricsDocked()) {
-        const LRESULT resize = GetLyricsDockResizeHit(point);
-        if (resize != HTNOWHERE) {
-            return resize;
-        }
-        if (nHitTest >= HTSIZEFIRST && nHitTest <= HTSIZELAST) {
-            return HTCLIENT;
-        }
-    }
-    return ((IsCaptionHidden()) && nHitTest == HTCLIENT) ? HTCAPTION : nHitTest;
+    const LRESULT hit = __super::OnNcHitTest(point);
+    // The child view handles the resize hit and forwards it as SC_SIZE.
+    return !IsLyricsDocked() && IsCaptionHidden() && hit == HTCLIENT ? HTCAPTION : hit;
 }
 
 void CMainFrame::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)

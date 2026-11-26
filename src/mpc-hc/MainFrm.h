@@ -479,7 +479,7 @@ private:
 
     CRect m_undockedLyricsRect{0, 0, 0, 0};
     HMONITOR m_lyricsDockMonitor = nullptr;
-    bool m_bLyricsDockAddedSizingFrame = false;
+    DWORD m_undockedLyricsFrameStyle = 0;
     bool m_bResizingLyricsDock = false;
     void SetupSecondarySubtitleSubMenu();
     void SetupVideoStreamsSubMenu();
@@ -1124,7 +1124,6 @@ public:
 
     afx_msg void SaveAppSettings();
 
-    afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
     afx_msg LRESULT OnNcHitTest(CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 

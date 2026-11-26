@@ -139,6 +139,10 @@ void CChildView::OnSize(UINT nType, int cx, int cy)
 LRESULT CChildView::OnNcHitTest(CPoint point)
 {
     LRESULT ret = CWnd::OnNcHitTest(point);
+    if (m_pMainFrame->IsLyricsDocked()) {
+        const LRESULT resize = m_pMainFrame->GetLyricsDockResizeHit(point);
+        return resize == HTNOWHERE ? ret : resize;
+    }
     if (!m_pMainFrame->IsFullScreenMainFrame() && m_pMainFrame->IsFrameLessWindow()) {
         CRect rcFrame;
         GetWindowRect(&rcFrame);
