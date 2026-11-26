@@ -309,6 +309,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 
     ON_MESSAGE_VOID(WM_SAVESETTINGS, SaveAppSettings)
 
+    ON_WM_NCCALCSIZE()
     ON_WM_NCHITTEST()
 
     ON_WM_HSCROLL()
@@ -422,6 +423,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_UPDATE_COMMAND_UI(ID_VIEW_PRESETS_CUSTOM, OnUpdateViewCustom)
     ON_COMMAND(ID_VIEW_PRESETS_FLOATING, OnViewFloating)
     ON_UPDATE_COMMAND_UI(ID_VIEW_PRESETS_FLOATING, OnUpdateViewFloating)
+    ON_COMMAND_RANGE(ID_LYRICS_DOCK_TOGGLE, ID_LYRICS_DOCK_RIGHT, OnLyricsDock)
+    ON_UPDATE_COMMAND_UI_RANGE(ID_LYRICS_DOCK_TOGGLE, ID_LYRICS_DOCK_RIGHT, OnUpdateLyricsDock)
     ON_COMMAND(ID_VIEW_COVERART, OnViewCoverArt)
     ON_UPDATE_COMMAND_UI(ID_VIEW_COVERART, OnUpdateViewCoverArt)
     ON_COMMAND(ID_VIEW_FULLSCREEN, OnViewFullscreen)
@@ -1899,7 +1902,8 @@ void CMainFrame::OnMove(int x, int y)
     WINDOWPLACEMENT wp;
     wp.length = sizeof(wp);
     GetWindowPlacement(&wp);
-    if (!m_bNeedZoomAfterFullscreenExit && !m_fFullScreen && IsWindowVisible() && wp.flags != WPF_RESTORETOMAXIMIZED && wp.showCmd != SW_SHOWMINIMIZED) {
+    if (!IsLyricsDocked() && !m_bNeedZoomAfterFullscreenExit && !m_fFullScreen && IsWindowVisible()
+            && wp.flags != WPF_RESTORETOMAXIMIZED && wp.showCmd != SW_SHOWMINIMIZED) {
         GetWindowRect(AfxGetAppSettings().rcLastWindowPos);
     }
 
@@ -1916,6 +1920,11 @@ void CMainFrame::OnEnterSizeMove()
 
 void CMainFrame::OnMoving(UINT fwSide, LPRECT pRect)
 {
+    if (IsLyricsDocked()) {
+        GetWindowRect(pRect);
+        return;
+    }
+
     if (AfxGetAppSettings().fSnapToDesktopEdges) {
         const CSize threshold(m_dpi.ScaleX(16), m_dpi.ScaleY(16));
 
@@ -1998,7 +2007,7 @@ void CMainFrame::OnSize(UINT nType, int cx, int cy)
         ShowWindow(SW_HIDE);
     } else {
         __super::OnSize(nType, cx, cy);
-        if (!m_bNeedZoomAfterFullscreenExit && IsWindowVisible() && !m_fFullScreen) {
+        if (!IsLyricsDocked() && !m_bNeedZoomAfterFullscreenExit && IsWindowVisible() && !m_fFullScreen) {
             CAppSettings& s = AfxGetAppSettings();
             if (nType != SIZE_MAXIMIZED && nType != SIZE_MINIMIZED) {
                 GetWindowRect(s.rcLastWindowPos);
@@ -2016,6 +2025,11 @@ void CMainFrame::OnSizing(UINT nSide, LPRECT lpRect)
     __super::OnSizing(nSide, lpRect);
 
     if (m_fFullScreen) {
+        return;
+    }
+
+    if (IsLyricsDocked()) {
+        ResizeLyricsDock(nSide, lpRect);
         return;
     }
 
@@ -2221,6 +2235,7 @@ void CMainFrame::OnSizingSnapToScreen(UINT nSide, LPRECT lpRect, bool bCtrl /*= 
 
 void CMainFrame::OnExitSizeMove()
 {
+    SaveLyricsDockSize();
     if (m_wndView.Dragging()) {
         // HACK: windowed (not renderless) video renderers may not produce WM_MOUSEMOVE message here
         UpdateControlState(CMainFrame::UPDATE_CHILDVIEW_CURSOR_HACK);
@@ -2268,6 +2283,7 @@ void CMainFrame::OnDisplayChange() // untested, not sure if it's working...
             MoveVideoWindow();
         }
     }
+    ApplyLyricsDock();
 }
 
 void CMainFrame::OnWindowPosChanging(WINDOWPOS* lpwndpos)
@@ -2291,7 +2307,9 @@ LRESULT CMainFrame::OnDpiChanged(WPARAM wParam, LPARAM lParam)
     m_dpi.Override(LOWORD(wParam), HIWORD(wParam));
     m_eventc.FireEvent(MpcEvent::DPI_CHANGED);
 
-    if (!restoringWindowRect) { //do not adjust for DPI if restoring saved window position
+    if (IsLyricsDocked()) {
+        ApplyLyricsDock();
+    } else if (!restoringWindowRect) { //do not adjust for DPI if restoring saved window position
         MoveWindow(reinterpret_cast<RECT*>(lParam));
     }
     CMPCThemeUtil::GetMetrics(true); //force reset metrics used by util class
@@ -2305,6 +2323,9 @@ LRESULT CMainFrame::OnDpiChanged(WPARAM wParam, LPARAM lParam)
 
 void CMainFrame::OnSysCommand(UINT nID, LPARAM lParam)
 {
+    if ((nID & 0xFFF0) == SC_MAXIMIZE) {
+        UndockLyrics();
+    }
     if ((nID & 0xFFF0) == SC_SCREENSAVE || (nID & 0xFFF0) == SC_MONITORPOWER) {
         // Only stop screensaver if video playing
         if (!m_fAudioOnly && !m_fEndOfStream && GetLoadState() == MLS::LOADED && GetMediaState() == State_Running) {
@@ -3911,9 +3932,27 @@ void CMainFrame::SaveAppSettings()
     }
 }
 
+void CMainFrame::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
+{
+    // Keep the whole dock as client area. WS_THICKFRAME still lets Windows run
+    // its resize loop when the dock's inner edge returns a sizing hit test.
+    if (!IsLyricsDocked()) {
+        __super::OnNcCalcSize(bCalcValidRects, lpncsp);
+    }
+}
+
 LRESULT CMainFrame::OnNcHitTest(CPoint point)
 {
     LRESULT nHitTest = __super::OnNcHitTest(point);
+    if (IsLyricsDocked()) {
+        const LRESULT resize = GetLyricsDockResizeHit(point);
+        if (resize != HTNOWHERE) {
+            return resize;
+        }
+        if (nHitTest >= HTSIZEFIRST && nHitTest <= HTSIZELAST) {
+            return HTCLIENT;
+        }
+    }
     return ((IsCaptionHidden()) && nHitTest == HTCLIENT) ? HTCAPTION : nHitTest;
 }
 
@@ -4660,6 +4699,9 @@ LRESULT CMainFrame::OnFilePostOpenmedia(WPARAM wParam, LPARAM lParam)
     if (m_fAudioOnly || HasDedicatedFSVideoWindow()) {
         UpdateControlState(CMainFrame::UPDATE_MEDIA_ART);
     }
+    if (!m_fAudioOnly) {
+        UndockLyrics();
+    }
     m_wndView.UpdateLyrics();
 
     if (s.bOpenRecPanelWhenOpeningDevice) {
@@ -4971,6 +5013,7 @@ void CMainFrame::OnFilePostClosemedia(bool bNextIsQueued/* = false*/)
 
     m_wndView.UpdateLyrics(bNextIsQueued);
     if (!bNextIsQueued) {
+        UndockLyrics();
         UpdateControlState(CMainFrame::UPDATE_MEDIA_ART);
         RecalcLayout();
     }
@@ -8930,6 +8973,7 @@ void CMainFrame::SetCaptionState(MpcCaptionState eState)
 
 void CMainFrame::OnViewCaptionmenu()
 {
+    UndockLyrics();
     const auto& s = AfxGetAppSettings();
     SetCaptionState(static_cast<MpcCaptionState>((s.eCaptionMenuMode + 1) % MpcCaptionState::MODE_COUNT));
 }
@@ -9298,6 +9342,9 @@ void CMainFrame::SetFloating(bool bFloating)
     if (m_bFloating == bFloating) {
         return;
     }
+    if (!bFloating) {
+        UndockLyrics();
+    }
     m_bFloating = bFloating;
 
     // top-most while the preset is active, without changing the saved "On Top" setting
@@ -9321,7 +9368,6 @@ void CMainFrame::UpdateFloatingFrame()
         return;
     }
     const bool bSeeThrough = bGlass && style == FloatingStyle::Transparent;
-    const bool bBackdrop = bGlass && !bSeeThrough;
 
     // Negative margins turn the whole client area into DWM frame ("sheet of glass"): the window surface
     // is composed with its own (premultiplied) alpha over whatever DWM draws for the frame there.
@@ -9367,18 +9413,20 @@ void CMainFrame::UpdateFloatingFrame()
     m_bFloatingGlass = bGlass && bApplied;
     m_floatingGlassStyle = bApplied ? style : FloatingStyle::Transparent;
     SetFloatingClickThrough(m_bFloatingGlass && m_floatingGlassStyle == FloatingStyle::Transparent);
+    UpdateFloatingOutline();
+    RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+}
 
-    // Windows 11 outlines and rounds windows: neither belongs around a see-through one, while the
-    // backdrops look like a regular window, popup or not. Both attributes fail harmlessly
-    // on older versions.
+void CMainFrame::UpdateFloatingOutline()
+{
+    const bool bGlass = m_bFloating && !IsFullScreenMainFrame();
+    const bool bFrameless = IsLyricsDocked() || (bGlass && m_floatingStyle == FloatingStyle::Transparent);
     constexpr DWORD kDwmBorderColor = 34;             // DWMWA_BORDER_COLOR
     constexpr DWORD kDwmCornerPreference = 33;        // DWMWA_WINDOW_CORNER_PREFERENCE
-    const COLORREF border = bSeeThrough ? 0xFFFFFFFE : 0xFFFFFFFF; // DWMWA_COLOR_NONE : DWMWA_COLOR_DEFAULT
-    const int corner = bSeeThrough ? 1 : bBackdrop ? 2 : 0; // DWMWCP_DONOTROUND : DWMWCP_ROUND : DWMWCP_DEFAULT
+    const COLORREF border = bFrameless ? 0xFFFFFFFE : 0xFFFFFFFF; // DWMWA_COLOR_NONE : DWMWA_COLOR_DEFAULT
+    const int corner = bFrameless ? 1 : bGlass ? 2 : 0; // DWMWCP_DONOTROUND : DWMWCP_ROUND : DWMWCP_DEFAULT
     ::DwmSetWindowAttribute(m_hWnd, kDwmBorderColor, &border, sizeof(border));
     ::DwmSetWindowAttribute(m_hWnd, kDwmCornerPreference, &corner, sizeof(corner));
-
-    RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 }
 
 void CMainFrame::SetFloatingClickThrough(bool bClickThrough)
@@ -9422,6 +9470,10 @@ void CMainFrame::UpdateFloatingClickThrough()
         if (m_wndView.IsWindowVisible() && rcView.PtInRect(pt)) {
             m_wndView.ScreenToClient(&pt);
             bOpaque = m_wndView.IsOpaqueAt(pt);
+            if (!bOpaque && IsLyricsDocked()) {
+                m_wndView.ClientToScreen(&pt);
+                bOpaque = GetLyricsDockResizeHit(pt) != HTNOWHERE;
+            }
         } else {
             // docked panels and bars are not see-through
             bOpaque = true;
@@ -9515,23 +9567,36 @@ void CMainFrame::OnViewZoom(UINT nID)
 
 void CMainFrame::OnUpdateViewZoom(CCmdUI* pCmdUI)
 {
-    pCmdUI->Enable(GetLoadState() == MLS::LOADED && !m_fAudioOnly);
+    const UINT id = pCmdUI->m_nID;
+    if (id == ID_VIEW_ZOOM_AUTOFIT && pCmdUI->m_pMenu) {
+        pCmdUI->SetText(ResStr(m_fAudioOnly ? IDS_MENU_CYCLE_HORIZONTAL_LYRICS_DOCK : IDS_MENU_ZOOM_AUTO_FIT));
+    }
+    const bool autoFit = id == ID_VIEW_ZOOM_AUTOFIT || id == ID_VIEW_ZOOM_AUTOFIT_LARGER;
+    pCmdUI->Enable(m_fAudioOnly && autoFit ? CanCycleLyricsDock() : GetLoadState() == MLS::LOADED && !m_fAudioOnly);
 }
 
 void CMainFrame::OnViewZoomAutoFit()
 {
+    if (m_fAudioOnly) {
+        CycleLyricsDock(false);
+        return;
+    }
     ZoomVideoWindow(ZOOM_AUTOFIT);
     m_OSD.DisplayMessage(OSD_TOPLEFT, ResStr(IDS_OSD_ZOOM_AUTO), 3000);
 }
 
 void CMainFrame::OnViewZoomAutoFitLarger()
 {
+    if (m_fAudioOnly) {
+        CycleLyricsDock(true);
+        return;
+    }
     ZoomVideoWindow(ZOOM_AUTOFIT_LARGER);
     m_OSD.DisplayMessage(OSD_TOPLEFT, ResStr(IDS_OSD_ZOOM_AUTO_LARGER), 3000);
 }
 
 void CMainFrame::OnViewModifySize(UINT nID) {
-    if (m_fFullScreen || !m_pVideoWnd || IsZoomed() || IsIconic() || GetLoadState() != MLS::LOADED) {
+    if (IsLyricsDocked() || m_fFullScreen || !m_pVideoWnd || IsZoomed() || IsIconic() || GetLoadState() != MLS::LOADED) {
         return;
     }
 
@@ -13556,6 +13621,7 @@ void CMainFrame::ToggleFullscreen(bool fToNearest, bool fSwitchScreenResWhenHasT
         return; //swallow request if we are in the delay period
     }
 
+    UndockLyrics();
     CMonitors monitors;
     CMonitor defaultMonitor = monitors.GetPrimaryMonitor();
     CMonitor currentMonitor = monitors.GetNearestMonitor(this);
@@ -14472,7 +14538,7 @@ void CMainFrame::ZoomVideoWindow(double dScale/* = ZOOM_DEFAULT_LEVEL*/, bool ig
 {
     const auto& s = AfxGetAppSettings();
 
-    if ((GetLoadState() != MLS::LOADED) ||
+    if (IsLyricsDocked() || (GetLoadState() != MLS::LOADED) ||
             (m_nLockedZoomVideoWindow > 0) || m_bLockedZoomVideoWindow) {
         if (m_nLockedZoomVideoWindow > 0) {
             m_nLockedZoomVideoWindow--;
@@ -25866,6 +25932,9 @@ bool CMainFrame::DownloadWithYoutubeDL(CString url, CString filename)
 void CMainFrame::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 {
     __super::OnSettingChange(uFlags, lpszSection);
+    if (uFlags == SPI_SETWORKAREA || uFlags == SPI_SETNONCLIENTMETRICS) {
+        ApplyLyricsDock();
+    }
     if (SPI_SETHIGHCONTRAST == uFlags) {
         AfxGetAppSettings().ReadWindowsColorSettings(); //brings back the dark flag when contrast goes off
         ApplyThemeChange(); //a contrast theme forces the modern dark theme

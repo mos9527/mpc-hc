@@ -13,6 +13,8 @@ Builds are available from [nightly](https://nightly.link/mos9527/mpc-hc/workflow
 - Seamless Audio Playback support!
 - `.lrc` (embedded or external) lyrics support in Audio-only view, rendered via Internal Subtitle Renderer with expanded style settings. Shown as a panel or as subtitles, either optionally in tategaki (vertical writing, with its own font option).
 - `Floating` (shortcut: <kbd>5</kbd>, to enable and cycle) view preset for Audio-only view with multiple modes
+- With audio lyrics loaded, <kbd>Alt</kbd>+<kbd>4</kbd> cycles horizontal docking (top, bottom) and <kbd>Alt</kbd>+<kbd>5</kbd> cycles tategaki docking (left, right). Both shortcuts enter Floating view if needed and keep their zoom actions for video.
+- In Floating view, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>5</kbd> to dock or undock lyrics. The right-click **Subtitle Track** menu selects the edge (top or bottom for horizontal lyrics, left or right for tategaki). Drag the inner edge to resize, or drag the lyrics away to undock and move the window.
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/4e470be6-bddd-4120-9ef1-61b43a5bb989" />

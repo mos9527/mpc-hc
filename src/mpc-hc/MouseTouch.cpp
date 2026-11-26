@@ -632,7 +632,12 @@ bool CMouse::TestDrag(const CPoint& screenPoint)
                 (bUpAssigned && !PointEqualsImprecise(screenPoint, m_beginDragPoint,
                     GetSystemMetrics(SM_CXDRAG), GetSystemMetrics(SM_CYDRAG)))) {
                 VERIFY(ReleaseCapture());
-                m_pMainFrame->PostMessage(WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(m_beginDragPoint.x, m_beginDragPoint.y));
+                CPoint dragStart = m_beginDragPoint;
+                if (m_pMainFrame->IsLyricsDocked()) {
+                    m_pMainFrame->UndockLyrics(&screenPoint);
+                    dragStart = screenPoint;
+                }
+                m_pMainFrame->PostMessage(WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(dragStart.x, dragStart.y));
                 m_drag = Drag::DRAGGED;
                 m_bLeftDown = false;
                 ret = true;

@@ -1195,6 +1195,11 @@
 #define ID_COLOR_CONTROLS               33464
 #define ID_VIEW_PRESETS_FLOATING        33465
 #define ID_VIEW_COVERART                33466
+#define ID_LYRICS_DOCK_TOGGLE           33467
+#define ID_LYRICS_DOCK_TOP              33468
+#define ID_LYRICS_DOCK_BOTTOM           33469
+#define ID_LYRICS_DOCK_LEFT             33470
+#define ID_LYRICS_DOCK_RIGHT            33471
 #define ID_RECENT_FILE_START            34000
 #define ID_RECENT_FILE_END              34999
 #define IDS_MFMT_AVI                    39001
@@ -1940,13 +1945,17 @@
 #define IDS_OSD_COVERART_HIDDEN         58075
 #define IDS_SUBSTYLE_TATEGAKI_FONT      58076
 #define IDS_SUBSTYLE_TATEGAKI_FONT_TIP  58077
+#define IDS_LYRICS_UNDOCK               58078
+#define IDS_AG_LYRICS_DOCK              58079
+#define IDS_MENU_ZOOM_AUTO_FIT          58080
+#define IDS_MENU_CYCLE_HORIZONTAL_LYRICS_DOCK 58081
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        20079
-#define _APS_NEXT_COMMAND_VALUE         33467
+#define _APS_NEXT_COMMAND_VALUE         33472
 #define _APS_NEXT_CONTROL_VALUE         22123
 #define _APS_NEXT_SYMED_VALUE           24052
 #endif

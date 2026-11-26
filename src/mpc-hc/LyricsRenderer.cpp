@@ -124,6 +124,9 @@ CLyricsRenderer::Settings CLyricsRenderer::CurrentSettings(Layout layout, bool b
             st.nHorPos = s.nHorPos;
             st.nVerPos = s.nVerPos;
             break;
+        case Layout::DockedLine:
+            st.style.scrAlignment = 5;
+            break;
     }
     return st;
 }
@@ -345,7 +348,7 @@ const CLyricsRenderer::Image* CLyricsRenderer::GetLine(int i)
         slot.bRendered = true;
         RenderLine(i, slot.img);
         slot.img.rcBox = slot.rcBox;
-        if (m_settings.layout == Layout::Line && m_settings.bVertical && !slot.img.bits.empty()) {
+        if (m_settings.layout != Layout::Panel && m_settings.bVertical && !slot.img.bits.empty()) {
             // from the square it was rendered in to the view
             const CSize offset = PlaceVerticalLine(slot.rcBox) - slot.rcBox.TopLeft();
             slot.img.rc.OffsetRect(offset);

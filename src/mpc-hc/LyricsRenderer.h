@@ -39,6 +39,7 @@ public:
     enum class Layout {
         Panel, // lines wrapped across the panel and placed by the caller; the style's alignment and margins are unused
         Line,  // a line placed by the style (alignment, margins, placement override) in the whole view
+        DockedLine, // a single line centered in the dock
     };
 
     // A rendered line, premultiplied ARGB

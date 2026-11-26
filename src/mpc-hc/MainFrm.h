@@ -445,6 +445,7 @@ private:
     bool m_bFloatingClickThrough = false; // WS_EX_LAYERED | WS_EX_TRANSPARENT applied
     void SetFloating(bool bFloating);
     void UpdateFloatingFrame();
+    void UpdateFloatingOutline();
     void SetFloatingClickThrough(bool bClickThrough);
     void UpdateFloatingClickThrough();
     bool IsFloatingTransparent() const { return m_bFloatingGlass; }
@@ -463,6 +464,23 @@ private:
     void SetupLyricsSubMenu(CMPCThemeMenu& subMenu);
     void OnLyricsSubMenu(int i);
     bool ToggleLyricsDisplay();
+    bool IsLyricsDocked() const { return !m_undockedLyricsRect.IsRectEmpty(); }
+    bool CanDockLyrics() const;
+    bool CanCycleLyricsDock() const;
+    void CycleLyricsDock(bool vertical);
+    void ApplyLyricsDock();
+    void UndockLyrics(const CPoint* dragPoint = nullptr);
+    CRect GetLyricsDockRect(int thickness = 0);
+    LRESULT GetLyricsDockResizeHit(CPoint point) const;
+    void ResizeLyricsDock(UINT side, LPRECT rect);
+    void SaveLyricsDockSize();
+    void OnLyricsDock(UINT id);
+    void OnUpdateLyricsDock(CCmdUI* pCmdUI);
+
+    CRect m_undockedLyricsRect{0, 0, 0, 0};
+    HMONITOR m_lyricsDockMonitor = nullptr;
+    bool m_bLyricsDockAddedSizingFrame = false;
+    bool m_bResizingLyricsDock = false;
     void SetupSecondarySubtitleSubMenu();
     void SetupVideoStreamsSubMenu();
     void SetupJumpToSubMenus(CMenu* parentMenu = nullptr, int iInsertPos = -1);
@@ -1106,6 +1124,7 @@ public:
 
     afx_msg void SaveAppSettings();
 
+    afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
     afx_msg LRESULT OnNcHitTest(CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 

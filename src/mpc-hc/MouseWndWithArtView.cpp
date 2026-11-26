@@ -134,7 +134,7 @@ BOOL CMouseWndWithArtView::OnEraseBkgnd(CDC* pDC)
     const bool bTransparent = IsBackgroundTransparent();
     m_canvas.Clear(bTransparent ? 0 : 0xFF000000);
 
-    const bool bArt = ShowsArt();
+    const bool bArt = ShowsArt() && !(m_pMainFrame->IsLyricsDocked() && this == &m_pMainFrame->m_wndView);
     CRect artArea = bArt ? client : CRect();
     m_rcLyrics.SetRectEmpty();
     if (m_lyricsView == LyricsView::Panel) {
@@ -725,7 +725,9 @@ void CMouseWndWithArtView::DrawLyricsLine(const CSize& client)
     m_nLyricsLine = cur;
 
     // placed as a subtitle by the style, but at the panel's fixed size rather than scaled to the view
-    m_lyricsRenderer.Prepare(lyrics, CLyricsRenderer::Layout::Line, m_bLyricsTategaki, client, m_pMainFrame->m_dpi.ScaleFactorY());
+    const auto layout = m_pMainFrame->IsLyricsDocked() && this == &m_pMainFrame->m_wndView
+                        ? CLyricsRenderer::Layout::DockedLine : CLyricsRenderer::Layout::Line;
+    m_lyricsRenderer.Prepare(lyrics, layout, m_bLyricsTategaki, client, m_pMainFrame->m_dpi.ScaleFactorY());
     m_lyricsRenderer.Retain(cur, cur);
     if (const CLyricsRenderer::Image* img = m_lyricsRenderer.GetLine(cur)) {
         BlendLyricsLine(*img, img->rc.TopLeft(), CRect(CPoint(0, 0), client));
